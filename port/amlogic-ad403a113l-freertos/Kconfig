@@ -1,0 +1,13 @@
+# Copyright (c) 2021-2022 Amlogic, Inc. All rights reserved.
+
+# SPDX-License-Identifier: MIT
+
+config BTSTACK
+	bool "btstack"
+	select KERNEL
+	select BT_AML if BOARD_AD403_A113L
+	help
+		"btstack is a open source bluetooth stack."
+
+
+
