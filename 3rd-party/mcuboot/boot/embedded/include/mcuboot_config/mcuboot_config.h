@@ -143,11 +143,7 @@
  * to cause an unwanted reset. If implementing this, the OS main.c must also
  * enable the watchdog (if required)!
  */
-#include "port/boot_wdt_port.h"
-  #define MCUBOOT_WATCHDOG_FEED() \
-      do {                        \
-          boot_port_wdt_feed();   \
-      } while (0)
+#define MCUBOOT_WATCHDOG_FEED()
 
 /*
  * Serial booting

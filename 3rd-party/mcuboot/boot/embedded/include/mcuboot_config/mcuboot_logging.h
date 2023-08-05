@@ -1,3 +1,6 @@
+#ifndef __MCUBOOT_LOGGING_H__
+#define __MCUBOOT_LOGGING_H__
+
 #define MCUBOOT_LOG_LEVEL_OFF      0
 #define MCUBOOT_LOG_LEVEL_ERROR    1
 #define MCUBOOT_LOG_LEVEL_WARNING  2
@@ -59,3 +62,4 @@ extern int printf( const char *pcFormat, ...);
 #define MCUBOOT_LOG_MODULE_DECLARE(...)
 #define MCUBOOT_LOG_MODULE_REGISTER(...)
 
+#endif

@@ -1,12 +1,17 @@
+#ifndef __MCUBOOT_ASSERT_H__
+#define __MCUBOOT_ASSERT_H__
 
-#include "port/boot_assert_port.h"
+#include "stdio.h"
 
 #ifdef assert
 #undef assert
 #endif
-#define assert(arg)                                                   \
-    do {                                                              \
-        if (!(arg)) {                                                 \
-            boot_port_assert_handler( __FILE__, __LINE__, __func__ ); \
-        }                                                             \
+#define assert(arg)                                                          \
+    do {                                                                     \
+        if (!(arg)) {                                                        \  
+            while(1) {                                                       \
+                printf("assert:%s %d %s\r\n" __FILE__, __LINE__, __func__ ); \
+            }                                                                \
+        }                                                                    \
     } while(0)
+#endif

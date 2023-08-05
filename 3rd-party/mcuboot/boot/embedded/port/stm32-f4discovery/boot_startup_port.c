@@ -35,11 +35,6 @@ static void do_boot(struct boot_rsp *rsp) {
     }
 }
 
-void boot_port_init( void )
-{
-//    bootloader_init();
-}
-
 /** Boots firmware at specific address */
 void boot_port_startup( struct boot_rsp *rsp )
 {
