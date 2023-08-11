@@ -50,6 +50,8 @@ FREERTOS_ENABLE = n
 
 MCUBOOT_ENALBE = y
 
+EXCEPTION_HANDLER = y
+
 #######################################
 # paths
 #######################################
@@ -62,6 +64,10 @@ VPATH += ${BTSTACK_ROOT}/example
 ######################################
 # source
 ######################################
+
+# ASM sources
+ASM_SOURCES += startup_stm32f407xx.s
+
 # C sources
 ifeq (${BLE_ENABLE}, y)
 C_DEFS += -DBLE_ENABLE
@@ -200,7 +206,13 @@ include ${BTSTACK_ROOT}/3rd-party/mcuboot/mcuboot.mk
 C_SOURCES += ${C_SOURCES_MCUBOOT}
 C_INCLUDES += ${C_INCLUDES_MCUBOOT}
 C_DEFS += ${C_DEFS_MCUBOOT}
+endif
 
+ifeq (${EXCEPTION_HANDLER}, y)
+include ${BTSTACK_ROOT}/3rd-party/exception_handler/module.mk
+C_SOURCES += ${C_SOURCES_EXCEPTION_HDR}
+C_INCLUDES += ${C_INCLUDES_EXCEPTION_HDR}
+ASM_SOURCES += ${S_SOURCE_EXCEPTION_HDR}
 endif
 
 endif
@@ -267,11 +279,6 @@ C_SOURCES += Src/stm32f4xx_hal_msp.c
 C_SOURCES += Src/stm32f4xx_it.c
 C_SOURCES += Src/system_stm32f4xx.c
 C_SOURCES += Src/usart.c
-
-# ASM sources
-ASM_SOURCES =  \
-startup_stm32f407xx.s
-
 
 #######################################
 # binaries

@@ -206,12 +206,6 @@ void Error_Handler(void)
     while(1);
 }
 
-void HardFault_Handler(void)
-{
-    printf("HardFault_Handler\n");
-    while(1);
-}
-
 #ifdef  USE_FULL_ASSERT
 /**
   * @brief  Reports the name of the source file and the source line number
