@@ -1,30 +1,11 @@
 /* Includes ------------------------------------------------------------------*/
-//#include "memory_attribute.h"
-//#include "exception_config.h"
 #include "exception_handler.h"
-// #include "exception_portable.h"
-// #include "hal_dwt.h"
-// #include "hal_uart.h"
-// #include "hal_gpt.h"
-// #include "hal_pmu.h"
 #include "stm32f4xx_hal.h"
 #include "core_cm4.h"
 
 #ifdef HAL_WDT_MODULE_ENABLED
 #include "hal_wdt.h"
 #endif
-
-// #ifdef MTK_SYSTEM_HANG_TRACER_ENABLE
-// #include "systemhang_tracer.h"
-// #endif /* MTK_SYSTEM_HANG_TRACER_ENABLE */
-
-// #ifdef MTK_MEMORY_MONITOR_ENABLE
-// #include "memory_monitor.h"
-// #endif /* MTK_MEMORY_MONITOR_ENABLE */
-
-#ifdef MTK_BOOTREASON_CHECK_ENABLE
-#include "bootreason_check.h"
-#endif /* MTK_BOOTREASON_CHECK_ENABLE */
 
 /* Private define ------------------------------------------------------------*/
 #if  defined ( __GNUC__ )
@@ -163,10 +144,6 @@ static uint32_t primask_backup_assert = 0;
 
 static uint32_t exception_wdt_mode = 0;
 
-#ifdef MTK_BOOTREASON_CHECK_ENABLE
-    static uint32_t ram_assert_flag = 0;
-#endif /* MTK_BOOTREASON_CHECK_ENABLE */
-
 static uint32_t double_assert_flag = 0;
 static uint32_t double_assert_lr = 0;
 
@@ -232,20 +209,10 @@ void abort(void)
     (void) primask_backup_abort;
 }
 
-//extern  hal_core_status_t hal_core_status_read(hal_core_id_t id);
 void platform_assert(const char *expr, const char *file, int line)
 {
-    // if (HAL_CORE_EXCEPTION == hal_core_status_read(HAL_CORE_CM4)){
-    //     exception_printf("[Warning]:cannot assert in exception flow!!!\r\n");
-    //     return;
-    // }
-
     primask_backup_assert = __get_PRIMASK();
     __disable_irq();
-
-#ifdef MTK_BOOTREASON_CHECK_ENABLE
-    bootreason_set_flag_assert_reset();
-#endif /* MTK_BOOTREASON_CHECK_ENABLE */
 
     SCB->CCR |=  SCB_CCR_UNALIGN_TRP_Msk;
     assert_expr.is_valid = 1;
@@ -260,22 +227,12 @@ void platform_assert(const char *expr, const char *file, int line)
     (void) primask_backup_assert;
 }
 
-// #if (PRODUCT_VERSION != 1552) && (PRODUCT_VERSION != 2552)
 void light_assert(const char *expr, const char *file, int line)
 {
     static uint32_t primask_backup_assert = 0;
 
-    // if (HAL_CORE_EXCEPTION == hal_core_status_read(HAL_CORE_CM4)){
-    //     exception_printf("[Warning]:cannot assert in exception flow!!!\r\n");
-    //     return;
-    // }
-
     primask_backup_assert = __get_PRIMASK();
     __disable_irq();
-
-#ifdef MTK_BOOTREASON_CHECK_ENABLE
-    bootreason_set_flag_assert_reset();
-#endif /* MTK_BOOTREASON_CHECK_ENABLE */
 
     SCB->CCR |=  SCB_CCR_UNALIGN_TRP_Msk;
     assert_expr.is_valid = 2;
@@ -289,24 +246,13 @@ void light_assert(const char *expr, const char *file, int line)
     /* Just to avoid compiler warnings. */
     (void) primask_backup_assert;
 }
-// #endif /* (PRODUCT_VERSION != 1552) && (PRODUCT_VERSION != 2552) */
 
 void __ram_assert(const char *expr, const char *file, int line)
 {
 	char exp[] = "RAM_Assert";
 
-    // if (HAL_CORE_EXCEPTION == hal_core_status_read(HAL_CORE_CM4)){
-    //     double_assert_flag = TRUE;
-    //     double_assert_lr = (uint32_t)__builtin_return_address(0);
-    //     return;
-    // }
-
     primask_backup_assert = __get_PRIMASK();
     __disable_irq();
-
-#ifdef MTK_BOOTREASON_CHECK_ENABLE
-    ram_assert_flag = TRUE;
-#endif /* MTK_BOOTREASON_CHECK_ENABLE */
 
     SCB->CCR |=  SCB_CCR_UNALIGN_TRP_Msk;
     assert_expr.is_valid = 1;
@@ -348,29 +294,8 @@ void exception_print_assert_info(void)
                          assert_expr.file,
                          (int)assert_expr.line);
     } else if (assert_expr.is_valid == 2) {
-        // exception_msgid(EXCEPTION_CPU_ID_MASTER,
-        //                 assert_expr.string,
-        //                 3,
-        //                 assert_expr.expr,
-        //                 assert_expr.file,
-        //                 (int)assert_expr.line);
-    }
-}
 
-/******************************************************************************/
-/*            Exception's Reboot Functions                                    */
-/******************************************************************************/
-__weak void exception_reboot(void)
-{
-    /* It is defined as a weak function.
-     * It needs to be implemented in project.
-     */
-#ifdef HAL_WDT_MODULE_ENABLED
-    /* In exception flow,uart mode is polling,so it's no need to wait for 3s */
-    hal_wdt_software_reset();
-    while (1);
-#endif
-    return;
+    }
 }
 
 void exception_dump_config(int flag)
@@ -398,8 +323,8 @@ void exception_dump_config_check(void)
 	/* check mode */
 	if (exception_config_mode.exception_mode == 0) {
 		/* error status, exception_dump_mode should not be 0 */
-		exception_config_mode.exception_mode_t.reset_after_dump = TRUE;
-		exception_config_mode.exception_mode_t.exception_fulldump_binary = TRUE;
+		exception_config_mode.exception_mode_t.reset_after_dump = 1;
+		exception_config_mode.exception_mode_t.exception_fulldump_binary = 1;
 	}
 
 	mode = (uint8_t)(exception_config_mode.exception_mode & 0xff);
@@ -407,8 +332,8 @@ void exception_dump_config_check(void)
 			(mode != (uint8_t)((exception_config_mode.exception_mode >> 16) & 0xff)) ||
 			(mode != (uint8_t)((exception_config_mode.exception_mode >> 24) & 0xff))) {
 		/* error status, exception_dump_mode should be a 4 Byets-repeated data*/
-		exception_config_mode.exception_mode_t.reset_after_dump = TRUE;
-		exception_config_mode.exception_mode_t.exception_fulldump_binary = TRUE;
+		exception_config_mode.exception_mode_t.reset_after_dump = 1;
+		exception_config_mode.exception_mode_t.exception_fulldump_binary = 1;
 	}
 }
 
@@ -459,39 +384,11 @@ void exception_init(void)
     /*enable unalign access,it will not trap when align access occurs */
     SCB->CCR &= ~SCB_CCR_UNALIGN_TRP_Msk;
 
-#ifdef MTK_BOOTREASON_CHECK_ENABLE
-    /* Set assert flag in rtc */
-    if (TRUE == ram_assert_flag){
-        bootreason_set_flag_assert_reset();
-    }
-    bootreason_set_flag_exception_reset();
-#endif /* MTK_BOOTREASON_CHECK_ENABLE */
-
     /* enable wdt reset mode for prevent exception flow hang */
     exception_enable_wdt_reset();
 
-#if defined(MTK_SYSTEM_HANG_TRACER_ENABLE_O1) || defined(MTK_SYSTEM_HANG_TRACER_ENABLE_O2)
-    systemhang_exception_enter_trace();
-#endif /* defined(MTK_SYSTEM_HANG_TRACER_ENABLE_O1) || defined(MTK_SYSTEM_HANG_TRACER_ENABLE_O2) */
-
-    // /* update core status for other module usage */
-    // exception_core_status_update();
-
-    // /* just for exception during dongle plug out */
-    // hal_gpt_delay_ms(500);
-
     // /* enable exception log service */
     // exception_log_service_init();
-
-#ifdef MTK_BOOTREASON_CHECK_ENABLE
-    /* check whther uart has received xoff */
-    extern bool query_syslog_xoff(void);
-
-    if (TRUE == query_syslog_xoff()) {
-        bootreason_set_flag_xoff_reset();
-        while (1);
-    }
-#endif
 
     /* show exception mode */
     exception_printf("exception_mode:0x%x\r\n", exception_config_mode.exception_mode);
@@ -500,7 +397,7 @@ void exception_init(void)
     /* show lr */
     exception_printf("cm4 lr:0x%x\r\n", exception_context.lr);
 
-#if (defined(AB156X) || (PRODUCT_VERSION == 2822))
+#if 0
     /* check exception dump configuration if is ok */
     exception_dump_config_check();
 #endif
@@ -512,8 +409,8 @@ void exception_init(void)
     // hal_gpt_get_free_run_count(HAL_GPT_CLOCK_SOURCE_1M , &(exception_info.timestamp));
     // hal_gpt_get_free_run_count(HAL_GPT_CLOCK_SOURCE_32K , &(exception_info.timestamp_32k));
 
-#if defined(AB156X) || (PRODUCT_VERSION == 2822)
-    if (exception_config_mode.exception_mode_t.reset_after_dump == TRUE) {
+#if 0
+    if (exception_config_mode.exception_mode_t.reset_after_dump == 1) {
         exception_dump_config(DISABLE_WHILELOOP_MAGIC);
     }
 #else
@@ -1001,16 +898,8 @@ void exception_dump_postprocess(void)
 
 #if (EXCEPTION_MEMDUMP_MODE & EXCEPTION_MEMDUMP_TEXT) || (EXCEPTION_MEMDUMP_MODE & EXCEPTION_MEMDUMP_BINARY)
     if ((exception_config_mode.exception_mode & EXCEPTION_MEMDUMP_TEXT) || (exception_config_mode.exception_mode & EXCEPTION_MEMDUMP_BINARY)) {
-#ifdef MTK_SWLA_ENABLE
-        extern void SLA_MemoryCallbackInit(void);
-#endif
-
         for (i = 0; i < exception_config.items; i++) {
-#ifdef MTK_SWLA_ENABLE
-            if (exception_config.configs[i].init_cb && (exception_config.configs[i].init_cb != SLA_MemoryCallbackInit)) {
-#else
             if (exception_config.configs[i].init_cb) {
-#endif
 
                 /* feed wdt to keep time for init callback */
                 exception_feed_wdt();
@@ -1030,17 +919,11 @@ void exception_dump_postprocess(void)
 
 }
 
-void exception_test_handler(void)
-{
-    exception_printf("<<<<<<<< LOG START LOG START LOG START LOG START LOG START <<<<<<<<\r\n");
-}
-
 /******************************************************************************/
 /*            Cortex-M4 Processor Exceptions Handlers                         */
 /******************************************************************************/
 void exception_cm4_fault_handler(uint32_t stack[], uint32_t fault_type)
 {
-
     /* dump exception time, fault type, etc */
     exception_dump_preprocess(fault_type);
 
@@ -1050,35 +933,20 @@ void exception_cm4_fault_handler(uint32_t stack[], uint32_t fault_type)
     /* dump the memory */
     exception_dump_memory();
 
-#if (EXCEPTION_SLAVES_TOTAL > 0)
-    /* do the slave dump */
-    exception_dump_slaves();
-#endif /* EXCEPTION_SLAVES_TOTAL */
-
     /* finish the dump */
     exception_dump_postprocess();
 
     /* check if reboot */
     if (reboot_check() == DISABLE_WHILELOOP_MAGIC) {
-        exception_reboot();
+        //exception_reboot();
     } else {
 
         /* disable wdt reset mode for entering while loop */
         /* maybe wdt has been changed to interrupt mode for triggering the NMI interrupt */
         exception_disable_wdt_reset();
 
-#if (defined(AB156X) || (PRODUCT_VERSION == 2822))
-        /* it will enable cap touch lpsd and power key */
-        pmu_enable_lpsd();
-#endif
-
-        //extern void syslog_port_disable_flowcontrol(void);
-        //syslog_port_disable_flowcontrol();
         while (1);
-
     }
-
-
 }
 
 /******************************************************************************/

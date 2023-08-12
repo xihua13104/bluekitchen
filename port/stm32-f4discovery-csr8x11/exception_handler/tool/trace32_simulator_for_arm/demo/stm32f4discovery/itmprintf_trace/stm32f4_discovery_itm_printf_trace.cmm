@@ -1,0 +1,73 @@
+; --------------------------------------------------------------------------------
+; @Title: ITM printf demo for STM32F4DISCOVERY board
+; @Description:
+;   This is a very simple demo to show how to display ascii encoded itm trace
+;   into a text message (Printf style).
+;   Prerequisites : see ../stm32f4/readme.txt
+; @Keywords: Cortex-M4, ITM, off-chip, SWD, trace, printf
+; @Author: HDA
+; @Board: STM32F4DISCOVERY
+; @Chip: STM32F4*
+; @Copyright: (C) 1989-2019 Lauterbach GmbH, licensed for use with TRACE32(R) only
+; --------------------------------------------------------------------------------
+; $Id: stm32f4_discovery_itm_printf_trace.cmm 16869 2020-12-10 08:14:21Z pegold $
+
+; memory map
+; 0x00000000 1024kB FLASH (aliased from 0x08000000)
+; 0x20000000  128kB SRAM
+
+  RESet
+  SYStem.RESet
+  SYStem.CPU STM32F407VG
+  SYStem.CONFIG.DEBUGPORTTYPE SWD
+IF UTRACE()||COMBIPROBE()
+(
+  SYStem.CONFIG.CONNECTOR MIPI20T
+)
+  SYStem.MemAccess DAP
+  SYStem.Option DUALPORT ON
+  SYStem.Up
+
+; Prevent error during power saving states and stop peripherals in debug mode
+  Data.Set E:0xE0042004 %Long 0yXXXXxxxxXXX11111XXXXxxxxXXXXx111  ; DBGMCU_CR
+; Setup GPIO clock
+  Data.Set E:0x40023830 %Long 0yXXXXxxxxXXXXxxxxXXXXxxxxXXX1xxxx  ; RCC_AHB1ENR
+; Setup pin multiplexing for using the 4 bit trace
+  Data.Set E:0x40021000 %Long 0yXXXXxxxxXXXXxxxxXX1010101010xxxx  ; GPOIE_PORTMODE
+  Data.Set E:0x40021008 %Long 0yXXXXxxxxXXXXxxxxXX1111111111xxxx  ; GPOIE_PORTSPEED
+  Data.Set E:0x40021020 %Long 0yXXXX00000000000000000000XXXXxxxx  ; GPIOE_AFRL
+
+; load debug information of demo application on the board
+  Data.LOAD.Elf ~~~~/demo_printf.axf
+  Register.Set PC main
+  Register.Set R13 0x20005000
+
+  ITM.PortMode Continuous
+  ITM.PortSize 4.
+
+; Slect the Analyzer (PowerTrace with Preprocessor)
+  IF hardware.COMBIPROBE()||hardware.UTRACE()
+  (
+    Trace.METHOD CAnalyzer   ; Using CombiProbe
+  )
+  ELSE IF Analyzer()
+  (
+    Trace.METHOD Analyzer    ; Using ARM preprocessor
+    Analyzer.Init
+    Analyzer.AutoFocus
+  )
+
+  ; Turn on ITM and ETM
+  ETM.OFF
+  ITM.ON
+
+  Trace.OFF              ; Enable the trace and turn it off
+
+  Go.direct
+  WAIT 5.s
+  Break.direct
+
+  PrintfTrace.List MESSAGE List.NoDummy
+
+  ENDDO
+

@@ -1,0 +1,993 @@
+; --------------------------------------------------------------------------------
+; @Title: TRACE32 default menu file
+; @Description:
+;   Programming file for standard pulldown menu and speedbar of TRACE32 GUI
+; @Keywords: GUI, pulldown, speedbar
+; @Author: -
+; @Copyright: (C) 1989-2014 Lauterbach GmbH, licensed for use with TRACE32(R) only
+; --------------------------------------------------------------------------------
+; $Id: t32.men 20462 2023-02-14 09:14:22Z mschaeffner $
+
+
+; --------------------------------------------------------------------------------
+; --------------------------------------------------------------------------------
+;   Default menus
+;   NOTE: change this file only if you want to change the default menus
+;         Adding buttons or menus and replacing single entries can be
+;         done without changing this file (see description of ADD item
+;         in MENU command).
+; --------------------------------------------------------------------------------
+;   This file was enhanced by JDT JbergDatenTechnik 97/98.
+; --------------------------------------------------------------------------------
+
+
+
+; --------------------------------------------------------------------------------
+; --------------------------------------------------------------------------------
+;  Speedbar definition
+; --------------------------------------------------------------------------------
+; --------------------------------------------------------------------------------
+
+TOOLBAR
+(
+    SEPARATOR
+    TOOLITEM   "Single Step"              ":step"          "Step"
+    TOOLITEM   "Step Over Call"           ":stepover"      "Step.Over"
+    TOOLITEM   "Step Diverge Path"        ":stepdiverge"   "Step.Diverge"
+    SEPARATOR
+    TOOLITEM   "Go Next"                  ":gonext"        "Go.Next"
+    TOOLITEM   "Go Till Return"           ":goreturn"      "Go.Return"
+    TOOLITEM   "Go Up"                    ":goup"          "Go.Up"
+    SEPARATOR
+    TOOLITEM   "Go"                       ":go"            "Go"
+    TOOLITEM   "Break"                    ":brk"           "Break"
+    SEPARATOR
+    TOOLITEM   "Toggle Mixed/HLL Mode"    ":mode"          "Mode"
+    SEPARATOR
+    TOOLITEM   "Help Topics"              ":help"          "HELP.Topics"
+    TOOLITEM   "Help Context"             ":helpc"         "HELP.PICK"
+    SEPARATOR
+    TOOLITEM   "Stop Command"             ":stop"          "STOP"
+    SEPARATOR
+    TOOLITEM   "Source/List"              ":list"          "List.auto"
+    TOOLITEM   "Memory Dump"              ":dump"          "Data.dump"
+    TOOLITEM   "Register"                 ":reg"           "Register.view"
+    SEPARATOR
+    TOOLITEM   "Watch"                    ":varwatch"      "Var.Watch"
+    TOOLITEM   "Stack"                    ":varframe"      "Frame.view /Locals /Caller"
+    TOOLITEM   "Automatic Watch"          ":varref"        "Var.Ref"
+    SEPARATOR
+    TOOLITEM   "List Breakpoints"         ":break"         "Break.List"
+    TOOLITEM   "List Symbols"             ":symbols"       "sYmbol.Browse.sYmbol"
+    TOOLITEM   "System Settings"          ":config"        "SYStem.state"
+    SEPARATOR
+)
+
+
+
+; --------------------------------------------------------------------------------
+; --------------------------------------------------------------------------------
+;  Top pulldown menue definiton
+; --------------------------------------------------------------------------------
+; --------------------------------------------------------------------------------
+
+MENU
+(
+; --------------------------------------------------------------------------------
+;   File pulldown submenue
+; --------------------------------------------------------------------------------
+  POPUP  "&File"
+  (
+         MENUITEM  "[:edit]&New Script"                         "PEDIT"
+         MENUITEM  "[:edit]&Edit Script..."
+         (
+                   DIALOG.File.open "*.cmm;*.py"
+                   ENTRY %LINE &filename
+                   IF   "&filename"!=""
+                   (
+                        PRIVATE &pwd
+                        &pwd=OS.PWD()
+                        IF   OS.FILE.EXTENSION(&filename)==".py"
+                        (
+                             PYthon.EDIT "&filename"
+                             HISTory.Set FILE ":edit" "B::PYthon.EDIT ""&filename""" "&pwd"
+                        )
+                        ELSE
+                        (
+                             PEDIT "&filename"
+                             HISTory.Set FILE ":edit" "B::PEDIT ""&filename""" "&pwd"
+                        )
+                   )
+         )
+         MENUITEM  "[:practice]&Run Script..."
+         (
+                   DIALOG.File.open "*.cmm;*.py"
+                   ENTRY %LINE &filename
+                   IF   "&filename"!=""
+                   (
+                        PRIVATE &pwd
+                        &pwd=OS.PWD()
+                        IF   OS.FILE.EXTENSION(&filename)==".py"
+                        (
+                             PYthon.RUN "&filename"
+                             HISTory.Set FILE ":practice" "B::PYthon.RUN ""&filename""" "&pwd"
+                        )
+                        ELSE
+                        (
+                             DO "&filename"
+                             HISTory.Set FILE ":practice" "B::DO ""&filename""" "&pwd"
+                        )
+                   )
+         )
+         DEFAULT
+         MENUITEM  "[:practice]&ChangeDir and Run Script..."
+         (
+                   PRIVATE &dirname
+                   DIALOG.File.open "*.cmm;*.py"
+                   ENTRY %LINE &filename
+                   IF   "&filename"!=""
+                   (
+                        IF   OS.FILE.EXTENSION(&filename)==".py"
+                        (
+                             &dirname=OS.FILE.PATH("&filename")
+                             CD &dirname
+                             PYthon.RUN "&filename"
+                             HISTory.Set FILE ":practice" "B::PYthon.RUN ""&filename""" "&dirname"
+                        )
+                        ELSE
+                        (
+                             PRIVATE &pwd
+                             &pwd=OS.PWD()
+                             CD.DO "&filename"
+                             HISTory.Set FILE ":practice" "B::CD.DO ""&filename""" "&pwd"
+                        )
+                   )
+         )
+         MENUITEM  "[:pfind]&Search for Script..."              "WELCOME.SCRIPTS"
+
+     IF  (VERSION.BUILD()>=99858.)&&(OS.FILE("~~/autostart.cmm"))
+     (
+         POPUP     "Automatic Scripts on Start"
+         (
+                   MENUITEM  "Edit User's Autostart Script"
+                   (
+                               PRIVATE  &cmm
+                               &cmm=VERSION.ENVironment(UAD)+"/"+"user-settings.cmm"
+                               &cmm=OS.FILE.ABSPATH("&cmm")
+                               IF !OS.FILE("&cmm")
+                                    APPEND "&cmm" "// Place commands here, which should be executed on every start of TRACE32 PowerView"+CONVert.CHAR(0x0A)+"// (e.g. MENU.AddTool, SETUP.TabSize, Setup.Var %)"
+                               PEDIT "&cmm"
+                   )
+                   ENABLE     ((STR.SCAN(VERSION.ENV(CMDLINEOPTS),"--t32-safestart",0)<0)&&(STR.SCAN(VERSION.ENV(CMDLINEOPTS),"--t32-help",0)<0)&&(OS.FILE("~~/autostart.cmm")))||(STR.SCAN(VERSION.ENV(CMDLINEOPTS),"--t32-logautostart",0)>=0)
+                   MENUITEM  "View Autostart Log"
+                   (
+                               PRIVATE &logfile
+                               &logfile=LOG.DO.AUTOSTARTLOGFILE()
+                               IF FILE.EXIST("&logfile")
+                                    TYPE "&logfile" /LineNumbers
+                   )
+         )
+     )
+
+
+         SEPARATOR
+         MENUITEM  "[:edit]Open File..."                        "EDIT *.*"
+         MENUITEM  "[:load]&Load File..."                       "D.LOAD *"
+         MENUITEM  "[:text]&Type File..."                       "TYPE *.*"
+         MENUITEM  "[:dump]D&ump File..."                       "DUMP *.*"
+
+
+         ADDHERE
+         SEPARATOR
+         MENUITEM  "[:stop]Stop Command"                        "STOP"
+         SEPARATOR
+         MENUITEM  "[:PRINTer]Printer Settings..."              "PRinTer"
+     IF  ((VERSION.BUILD()>30330.)&&(OS.VERSION(0)==2.)&&(OS.VERSION(1)>4.))
+     (
+         MENUITEM  "[:screenshot]Window Screenshot to File..."  "SCreenShot"
+     )
+     ELSE
+     (
+         MENUITEM  "[:camera]Window Print..."                   "PRinTer.HardCopy"
+     )
+         SEPARATOR
+         MENUITEM  "[:exit]E&xit"                               "QUIT"
+  )
+
+
+
+; --------------------------------------------------------------------------------
+;   Edit pulldown submenue
+; --------------------------------------------------------------------------------
+  POPUP  "&Edit"
+  (
+         MENUITEM  "[:save]Save &All Editor Files"              "EDIT.SAVE"
+         MENUITEM  "[:edit]&List All Editor Files"              "EDIT.List"
+         SEPARATOR
+         MENUITEM  "[:find]&Grep in Source Files..."            "Data.GREP """" """" /Word /Case"
+  )
+
+
+
+; --------------------------------------------------------------------------------
+;   View pulldown submenue
+; --------------------------------------------------------------------------------
+  TEAROFF
+  POPUP  "&View"
+  (
+         MENUITEM  "[:reg]&Registers"                           "Register"
+         MENUITEM  "[:dump]&Dump..."                            "Data.dump"
+         DEFAULT
+         MENUITEM  "[:list]List &Source"                        "List"
+         MENUITEM  "[:varwatch]&Watch"                          "Var.Watch"
+         MENUITEM  "[:varref]Re&ferenced Var"                   "Var.Ref"
+         MENUITEM  "[:varlocal]&Locals"                         "Var.Local"
+         MENUITEM  "[:varframe]Stackframe with Locals"          "Frame /Locals /Caller"
+         MENUITEM  "[:varframe]Stackframe"                      "Frame"
+         MENUITEM  "[:chip]&Peripherals"                        "PER"
+         POPUP     "[:symbols]S&ymbols"
+         (
+                   DEFAULT
+                   MENUITEM  "&Browse Symbols"                  "sYmbol.Browse.sYmbol"
+                   MENUITEM  "Browse &Modules"                  "sYmbol.Browse.Module"
+                   MENUITEM  "Browse &Functions"                "sYmbol.Browse.Function"
+                   MENUITEM  "Browse &Variables"                "sYmbol.Browse.Var"
+                   MENUITEM  "Browse &Types"                    "sYmbol.Browse.Type"
+                   MENUITEM  "Symbols Tree View"                "sYmbol.List.TREE"
+                   POPUP     "Source"
+                   (
+                             MENUITEM  "File Names"             "sYmbol.List.SOURCE"
+                             MENUITEM  "Search Paths"           "sYmbol.SPATH.List"
+                   )
+                   MENUITEM  "Details of Symbol"                "sYmbol.INFO *"
+         )
+         MENUITEM  "[:group]Groups"                             "Group.List"
+         MENUITEM  "[:bookmark]Bookmarks"                       "BookMark.list"
+         MENUITEM  "[:alist]Trace List"                         "Trace.List"
+         MENUITEM  "[:area]Messa&ge Area"                       "AREA"
+  )
+
+
+
+; --------------------------------------------------------------------------------
+;   Var pulldown submenue
+; --------------------------------------------------------------------------------
+  POPUP  "V&ar"
+  (
+         MENUITEM  "[:varwatch]W&atch..."                       "Var.AddWatch *"
+         MENUITEM  "[:var]&View..."                             "Var.View *"
+         MENUITEM  "[:view]&Data View..."                       "Data.View %var *"
+         MENUITEM  "[:breaknew]&Breakpoint..."                  "Var.Break.Set"
+         MENUITEM  "[:list]&Show Function..."                   "sYmbol.Browse.Function * /Click ""Data.List *"" /Delete"
+         MENUITEM  "[:varwatch]Show &Watch"                     "Var.AddWatch"
+         MENUITEM  "[:varlocal]Show &Locals"                    "Var.Local"
+         MENUITEM  "[:varframe]Show S&tack"                     "Frame.view /Locals /Caller"
+         MENUITEM  "[:varref]Show &Current Vars"                "Var.REF"
+         SEPARATOR
+         MENUITEM  "[:varconfig]&Format..."                     "SETUP.Var"
+  )
+
+
+
+; --------------------------------------------------------------------------------
+;   Break pulldown submenue
+; --------------------------------------------------------------------------------
+  POPUP  "&Break"
+  (
+         MENUITEM  "[:breaknew]&Set..."                         "Break.Set"
+         DEFAULT
+         MENUITEM  "[:break]&List"                              "Break.List"
+         MENUITEM  "[:breakconfig]&Configuration..."            "Break.CONFIG"
+         SEPARATOR
+         MENUITEM  "[:removeall]Delete &All"                    "Break.Delete /anh"
+         SEPARATOR
+         SEPARATOR
+     IF  hardware.ICD()
+     (
+         MENUITEM  "[:trigger]&Trigger Bus..."                  "TrBus"
+     )
+         MENUITEM  "[:tronchip]&OnChip Trigger..."              "TrOnchip"
+         SEPARATOR
+         MENUITEM  "Trigger Reset"
+         (
+                   Trigger.Reset
+                   TrOnchip.RESet
+                   IF  ice()
+                   (
+                       TrEvent.RESet
+                       TrIn.RESet
+                   )
+         )
+  )
+
+
+
+; --------------------------------------------------------------------------------
+;   Run pulldown submenue
+; --------------------------------------------------------------------------------
+  TEAROFF
+  POPUP  "&Run"
+  (
+         DEFAULT
+         MENUITEM  "[:step]&Step,F2"                            "Step"
+         MENUITEM  "[:stepover]Step &Over Call,F3"              "Step.Over"
+         MENUITEM  "[:stepdiverge]Step &Diverge Path,F4"        "Step.Diverge"
+         SEPARATOR
+         MENUITEM  "[:gonext]Go &Next"                          "Go.Next"
+         MENUITEM  "[:goreturn]Go &Return,F5"                   "Go.Return"
+         MENUITEM  "[:goup]Go &Up,F6"                           "Go.Up"
+         MENUITEM  "[:gotill]Go &Till..."                       "Go *"
+         MENUITEM  "[:go]&Go,F7"                                "Go"
+         MENUITEM  "[:brk]&Break,F8"                            "Break"
+         SEPARATOR
+         MENUITEM  "[:mode]&Mode,F9"                            "Mode"
+  )
+
+
+
+; --------------------------------------------------------------------------------
+;   CPU pulldown submenue
+; --------------------------------------------------------------------------------
+  POPUP  "&CPU"
+  (
+         DEFAULT
+         MENUITEM  "[:config]S&ystem Settings..."               "SYStem"
+         SEPARATOR
+         MENUITEM  "[:reg]&CPU Registers"                       "Register"
+         MENUITEM  "[:fpureg]&FPU Registers"                    "FPU"
+         ADDHERE
+         MENUITEM  "[:chip]&Peripherals"                        "PER"
+         SEPARATOR
+         POPUP     "Change Frame"
+         (
+                   MENUITEM  "[:backtree]Frame &Up"             "Frame.Up"
+                   MENUITEM  "[:downtree]Frame &Down"           "Frame.Down"
+                   SEPARATOR
+                   MENUITEM  "[:copy]Frame &Copy"               "Frame.COPY"
+                   MENUITEM  "[:paste]Frame &Swap"              "Frame.SWAP"
+                   SEPARATOR
+                   MENUITEM  "[:undo]Frame Undo"                "Frame.UNDO"
+                   MENUITEM  "[:redo]Frame Redo"                "Frame.REDO"
+         )
+         SEPARATOR
+         MENUITEM  "&In Target Reset"                           "SYStem.RESetTarget"
+         MENUITEM  "&Reset CPU Registers"                       "Register.RESet"
+
+  )
+
+
+
+; --------------------------------------------------------------------------------
+;   Misc pulldown submenue
+; --------------------------------------------------------------------------------
+  POPUP  "&Misc"
+  (
+     IF  SIMULATOR()
+     (
+         MENUITEM  "[:compound]&Vco Oscillator..."              "VCO"
+     )
+         DEFAULT
+         MENUITEM  "[:compound]Frequency &Counter..."           "Count"
+         ENABLE    POWERPROBE()
+         MENUITEM  "[:compound]&Pulse Generator..."             "PULSE"
+         MENUITEM  "[:time]&Runtime"                            "RunTime"
+         SEPARATOR
+         MENUITEM  "[:map]Load &Map"                            "sYmbol.List.MAP"
+         MENUITEM  "[:map]Memory Map"                           "Map.List"
+         SEPARATOR
+         MENUITEM  "[:flash]&Flash Programming"                 "FLASH.List"
+         SEPARATOR
+         MENUITEM  "[:colors]Ch&oose Colors..."                 "SETUP.COLOR"
+         MENUITEM  "[:config]&Interface Config..."              "IFCONFIG"
+         POPUP     "[:config]Tools"
+         (
+                   MENUITEM  "[:colors]Edit bitmap template..."
+                   (
+;                            IF   FILE.EXIST("~~/demo/menu/addmybutton.cmm")     ; since build 31361
+                             IF   OS.FILE("~~/demo/menu/addmybutton.cmm")
+                                  BITMAPEDIT "~~/demo/menu/addmybutton.cmm"
+                             ELSE
+                             (
+                                  PRINT  %ERROR "default file ~~/demo/menu/addmybutton.cmm doesn't exist - using file ./addmybutton.cmm instead"
+                                  IF     !OS.FILE("addmybutton.cmm")
+                                  (
+                                         OPEN   #1    "addmybutton.cmm"    /Create /Write
+                                         WRITE  #1    ";|--------------------------------------------------------------------------|"
+                                         WRITE  #1    ";|  This template file addmybutton.cmm is used for creating bitmaps         |"
+                                         WRITE  #1    ";|  which will be used later in an other user PRACTICE script.              |"
+                                         WRITE  #1    ";|                                                                          |"
+                                         WRITE  #1    ";|  The command     BITMAPEDIT addmybutton.cmm                              |"
+                                         WRITE  #1    ";|  will open a window for defining and modifying a bitmap store between    |"
+                                         WRITE  #1    ";|  the 2 square brackets in the script text below.                         |"
+                                         WRITE  #1    ";|--------------------------------------------------------------------------|"
+                                         WRITE  #1    ";|  (c) Copyright by Lauterbach GmbH 2012-04-03, msc                        |"
+                                         WRITE  #1    ";|--------------------------------------------------------------------------|"
+                                         WRITE  #1    ""
+                                         WRITE  #1    ""
+                                         WRITE  #1    "MENU.ReProgram"
+                                         WRITE  #1    "("
+                                         WRITE  #1    "     ADD"
+                                         WRITE  #1    "     TOOLBAR"
+                                         WRITE  #1    "     ("
+                                         WRITE  #1    "         ; The square brackets will later contain the bitmap"
+                                         WRITE  #1    "         TOOLITEM ""newbutton"" ""cmd"""
+                                         WRITE  #1    "         ["
+                                         WRITE  #1    "         ]"
+                                         WRITE  #1    "     )"
+                                         WRITE  #1    ")"
+                                         WRITE  #1    ""
+                                         WRITE  #1    "ENDDO"
+                                         CLOSE  #1
+                                  )
+                                  BITMAPEDIT    addmybutton.cmm
+                             )
+                   )
+                   MENUITEM  "[:t32s]Display internal icon library"         "DO         ~~/demo/menu/internal_icons.cmm"
+         )
+         MENUITEM  "Japanese Menu"                              "MENU.ReProgram ~~/t32ja.men"
+  )
+
+
+
+; --------------------------------------------------------------------------------
+;   Trace pulldown submenue
+; --------------------------------------------------------------------------------
+
+  POPUP  "&Trace"
+  (
+         DEFAULT
+         MENUITEM  "[:aconfig]&Configuration..."                "Trace"
+         MENUITEM  "[:aconfig]CTS &Settings..."                 "CTS"
+    IF   (CPUFAMILY()=="TRICORE"||CPUFAMILY()=="C166")
+    (
+         MENUITEM  "&MCDS Settings..."                          "MCDS"
+    )
+    IF   (CPUFAMILY()=="QDSP5"||CPUFAMILY()=="QDSP6"||CPUFAMILY()=="CEVA-X"||CPUFAMILY()=="TEAKLITE3")
+    (
+         MENUITEM  "&ETM Settings..."                           "ETM"
+    )
+    IF   CPUFAMILY()=="ARM"
+    (
+         MENUITEM  "&ETM Settings..."                           "ETM"
+         IF  OS.FILE("~~/demo/analyzer/trigger/etmdialog.cmm")
+         (
+           MENUITEM  "Trigger Dialog..."                        "do ~~/demo/analyzer/trigger/etmdialog.cmm"
+         )
+    )
+    IF   CPUFAMILY()=="POWERPC"
+    (
+;           MPC55xx, SPC55xx, MPC56xx, SPC56xx, MPC57xx, SPC57xx
+       IF  (CPUIS(?PC55??*)||CPUIS(?PC56??*)||CPUIS(?PC57??*))
+       (
+         MENUITEM  "&NEXUS Settings..."                         "NEXUS"
+       )
+       IF  (STRing.MID(CPU(),0,2)=="P3")||(STRing.MID(CPU(),0,2)=="P4")||(STRing.MID(CPU(),0,2)=="P5")
+       (
+         MENUITEM  "&NEXUS Settings..."                         "NEXUS"
+       )
+    )
+    IF   CPUFAMILY()=="ETPU"
+    (
+         MENUITEM  "&NEXUS Settings..."                         "NEXUS"
+    )
+
+;     -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
+    POPUP "[:alist]&List"
+    (
+         DEFAULT
+         MENUITEM  "&Default"                                   "Trace.List"
+         MENUITEM  "&All"                                       "Trace.List ALL"
+         MENUITEM  "[:correlate]&Tracking with Source"
+         (
+                   Data.List E: /Track
+                   Trace.List
+         )
+         MENUITEM  "[:alistcts]List &Context Tracking System"   "CTS.List"
+    )
+;     -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
+    POPUP "[:achart]Ch&art"
+    (
+         DEFAULT
+         MENUITEM  "S&ymbols"                                   "Trace.Chart.sYmbol"
+         MENUITEM  "[:correlate]&Tracking with List and Source"
+         (
+                   Data.List          E: /Track
+                   Trace.List            /Track
+                   Trace.Chart.sYmbol    /Track
+         )
+    )
+    ADDHERE
+    SEPARATOR
+    MENUITEM  "[:save]Save Trace Data..."                       "Trace.SAVE"
+    MENUITEM  "[:load]Load Reference Data..."                   "Trace.LOAD *"
+    SEPARATOR
+;     -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -   -
+    MENUITEM  "&Reset"                                          "Trace.RESet"
+  )
+
+
+
+; --------------------------------------------------------------------------------
+;   Probe pulldown submenue (Logic Analyzer)
+; --------------------------------------------------------------------------------
+ IF VERSION.BUILD()>=132328.
+ (
+  IF CIProbe()||IProbe.PROBE()||hardware.POWERPROBE()||Integrator()
+  (
+   POPUP "Probe"
+   (
+    IF CIProbe()
+    (
+         MENUITEM  "[:aconfig]Configure CIProbe..."             "CIProbe.state"
+     IF CIProbe.ANALOG()
+     (
+         MENUITEM  "[:adraw]Draw"                               "CIProbe.DRAW.channel"
+     )
+     IF CIProbe.DIGITAL()
+     (
+         MENUITEM  "[:atiming]Timing"                           "CIProbe.Timing"
+     )
+         MENUITEM  "[:alist]List"                               "CIProbe.List"
+     IF CIProbe.ANALOG()
+     (
+         MENUITEM  "[:pod]Analog Settings..."                   "POD.state CIProbe"
+     )
+    )
+    IF IProbe.PROBE()
+    (
+     IF CIProbe()
+     (
+         SEPARATOR
+     )
+         MENUITEM  "[:aconfig]Configure IProbe..."              "IProbe.state"
+     IF IProbe.ANALOG()
+     (
+         MENUITEM  "[:adraw]Draw"                               "IProbe.DRAW.channel"
+     )
+     IF IProbe.DIGITAL()
+     (
+         MENUITEM  "[:atiming]Timing"                           "IProbe.Timing"
+     )
+         MENUITEM  "[:alist]List"                               "IProbe.List"
+     IF CIProbe.ANALOG()
+     (
+         MENUITEM  "[:pod]Analog Settings..."                   "POD.state IProbe"
+     )
+;   v  IF IProbe.PROBE()
+    )
+    IF hardware.POWERPROBE()
+    (
+     IF CIProbe()||IProbe.PROBE()
+     (
+         SEPARATOR
+     )
+         MENUITEM  "[:aconfig]Configure PowerProbe..."          "Probe.state"
+         MENUITEM  "[:atiming]Timing"                           "Probe.Timing"
+         MENUITEM  "[:alist]List"                               "Probe.List"
+         MENUITEM  "[:compound]Pulse Generator..."              "PULSE.state"
+         MENUITEM  "[:aconfig]Pattern Generator..."             "PATTERN.state"
+;   v  IF hardware.POWERPROBE()
+    )
+    IF Integrator()
+    (
+     IF CIProbe()||IProbe.PROBE()||hardware.POWERPROBE()
+     (
+         SEPARATOR
+     )
+         MENUITEM  "[:aconfig]Configure Integrator..."          "Integrator.state"
+     IF Integrator.ANALOG()!=0.
+     (
+         MENUITEM  "[:adraw]Draw"                               "Integrator.DRAW.channel"
+     )
+         MENUITEM  "[:atiming]Timing"                           "Integrator.Timing"
+         MENUITEM  "[:alist]List"                               "Integrator.List"
+     IF (Integrator.ANALOG()&1.<<0.)!=0.
+     (
+         MENUITEM  "[:pod]Analog Settings..."                   "POD.state A"
+     )
+;   v  IF Integrator()
+    )
+    IF CIProbe.DIGITAL()||IProbe.DIGITAL()||hardware.POWERPROBE()||Integrator()
+    (
+         SEPARATOR
+         MENUITEM  "[:pod]&Configure Probes..."                 "POD.state"
+    )
+;  v  POPUP "Probe"
+   )
+; v   IF CIProbe()||IProbe.PROBE()||hardware.POWERPROBE()||Integrator()
+  )
+;v    IF VERSION.BUILD()>=132328.
+ )
+ ELSE IF VERSION.BUILD()>6305.
+ (
+  IF CIProbe()||IProbe.PROBE()||powerprobe()||Integrator()
+  (
+   POPUP "Probe"
+   (
+     IF CIProbe()
+     (
+         MENUITEM  "[:aconfig]Configuration CIProbe..."         "CIProbe.state"
+         MENUITEM  "[:adraw]Draw"                               "CIProbe.Draw"
+         MENUITEM  "[:alist]List"                               "CIProbe.List"
+         MENUITEM  "Analog Settings..."                         "POD.state CIP"
+       IF IProbe.PROBE()||powerprobe()||Integrator()
+       (
+         SEPARATOR
+       )
+     )
+     IF  IProbe.PROBE()
+     (
+         MENUITEM  "[:aconfig]Configuration IProbe..."          "IProbe.state"
+      IF IProbe.ANALOG()
+      (
+         MENUITEM  "[:adraw]Draw"                               "IProbe.Draw"
+      )
+      ELSE
+      (
+         MENUITEM  "[:atiming]Timing"                           "IProbe.Timing"
+      )
+         MENUITEM  "[:alist]List"                               "IProbe.List"
+         ENABLE    IProbe.ANALOG()
+         MENUITEM  "Analog Settings..."                         "POD.state IP"
+      IF powerprobe()||Integrator()||(IProbe.PROBE()&&!IProbe.ANALOG())
+      (
+         SEPARATOR
+      )
+     )
+     IF  powerprobe()
+     (
+         MENUITEM  "[:aconfig]Configuration PowerProbe..."      "Probe.state"
+         MENUITEM  "[:atiming]Timing"                           "Probe.Timing"
+         MENUITEM  "[:alist]List"                               "Probe.List"
+         MENUITEM  "Pulse Generator..."                         "PULSE"
+         MENUITEM  "Pattern Generator..."                       "PATTERN"
+         SEPARATOR
+     )
+     IF  Integrator()
+     (
+         MENUITEM  "[:aconfig]Configuration Integrator..."      "Integrator.state"
+         MENUITEM  "[:atiming]Timing"                           "Integrator.Timing"
+         MENUITEM  "[:alist]List"                               "Integrator.List"
+         SEPARATOR
+     )
+     IF  powerprobe()||Integrator()||(IProbe.PROBE()&&!IProbe.ANALOG())
+     (
+         MENUITEM  "[:pod]&Configure Probes..."                 "POD.state"
+     )
+;  v  POPUP "Probe"
+   )
+; v   IF CIProbe()||IProbe.PROBE()||powerprobe()||Integrator()
+  )
+;v    ELSE IF VERSION.BUILD()>6305.
+ )
+
+
+
+; --------------------------------------------------------------------------------
+;   Perf pulldown submenue
+; --------------------------------------------------------------------------------
+  POPUP  "&Perf"
+  (
+         DEFAULT
+         MENUITEM  "[:pconfig]Perf &Configuration..."           "PERF"
+         MENUITEM  "[:pperf]Perf &List"                         "PERF.List"
+         MENUITEM  "[:pperf]Perf List Dy&namic"                 "PERF.List DYNamic"
+         SEPARATOR
+
+         POPUP     "&Function Runtime"
+         (
+                   ADDHERE
+                   MENUITEM  "[:perf]Show &Numerical"           "Trace.STATistic.FUNC"
+                   MENUITEM  "[:perf]Show as &Tree"             "Trace.STATistic.TREE"
+                   MENUITEM  "[:perf]Show &Detailed Tree"       "Trace.STAT.TREE ALL"
+                   MENUITEM  "[:achartnest]Show as T&iming"     "Trace.CHART.FUNC"
+                   MENUITEM  "[:alistnest]Show N&esting"        "Trace.ListNesting"
+         )
+         POPUP     "&Distribution"
+         (
+                   MENUITEM  "[:perf]Show &Numerical"           "Trace.STATistic.DistriB Data"
+                   MENUITEM  "[:achart]Show as &Timing"         "Trace.CHART.DistriB Data"
+                   MENUITEM  "[:perf]Show &Detailed"            "Trace.STATistic.DistriB Data /List ALL"
+         )
+         POPUP     "D&uration A to B"
+         (
+                   MENUITEM  "[:perf]Show &Numerical"           "Trace.STATistic.DURation"
+                   MENUITEM  "[:aprofile]Show as &Timing"       "Trace.PROfileChart.DURation"
+         )
+         POPUP     "D&istance Trace Records"
+         (
+                   MENUITEM  "[:perf]Show &Numerical"           "Trace.STATistic.DIStance"
+                   MENUITEM  "[:aprofile]Show as &Timing"       "Trace.PROfileChart.DIStance"
+         )
+         ADDHERE
+         SEPARATOR
+         MENUITEM  "&Reset"
+         (
+                   PERF.RESet
+                   Break.Delete /Alpha /Beta /Charly
+         )
+  )
+
+
+
+; --------------------------------------------------------------------------------
+;   Cov pulldown submenue
+; --------------------------------------------------------------------------------
+  POPUP  "C&ov"
+  (
+         DEFAULT
+         MENUITEM  "[:aconfig]&Configuration..."                "COVerage.state"
+         MENUITEM  "[:coverage]List R&anges"                    "COVerage.List"
+         MENUITEM  "[:coverage]List &Functions"                 "COVerage.ListFunc"
+         MENUITEM  "[:coverage]List &Modules"                   "COVerage.ListModule"
+         MENUITEM  "[:coverage]List &Variables"                 "COVerage.ListVar"
+         ADDHERE
+         SEPARATOR
+         MENUITEM  "[:coveragenew]&Add Tracebuffer"             "COVerage.ADD"
+      IF OS.FILE("~~/demo/coverage/multi_file_report/create_report.cmm")
+      (
+         MENUITEM  "[:report]Create Rep&ort..."                 "DO ~~/demo/coverage/multi_file_report/create_report.cmm"
+      )
+         SEPARATOR
+         MENUITEM  "&Reset"                                     "COVerage.RESet"
+  )
+  ADDHERE
+
+
+
+; --------------------------------------------------------------------------------
+;   Window pulldown submenue
+; --------------------------------------------------------------------------------
+  POPUP  "&Window"
+  (
+         MENUITEM  "Create Duplicate window"                    "winduplicate"
+         MENUITEM  "[:remove]Clear Windows on &Page"            "winclear"
+         MENUITEM  "[:removeall]Clear &all Windows"             "Winpage.Reset"
+         SEPARATOR
+         MENUITEM  "[:save]S&tore Windows..."                   "STOre * Win"
+         MENUITEM  "[:load]&Load Windows..."                    "DO *"
+  )
+
+
+
+; --------------------------------------------------------------------------------
+;   Help pulldown submenue
+; --------------------------------------------------------------------------------
+  POPUP  "&Help"
+  (
+         DEFAULT
+         MENUITEM  "[:help]&Contents"                           "HELP.Topics"
+         MENUITEM  "[:index]&Index"                             "HELP.Index"
+         MENUITEM  "[:find]&Find..."                            "HELP.Find"
+         MENUITEM  "[:tree]T&ree"                               "HELP.Tree"
+         SEPARATOR
+         MENUITEM  "[:manual]PowerView User's Guide"            "HELP __IDE_USER_"
+         SEPARATOR
+         MENUITEM  "[:manual]&Processor Architecture Manual"
+         (
+                   LOCAL &item
+                   &item=CPUHELP()
+                   HELP  __em&(item)_
+         )
+         MENUITEM  "[:manual]Debugger &Tutorial"                "HELP __TITUT_"
+     IF  (CPUFAMILY()=="C166")||(CPUFAMILY()=="TRICORE")||(CPUFAMILY()=="PCP")||(CPUFAMILY()=="GTM")
+     (
+         MENUITEM  "[:manual]MCDS User Guide"                   "HELP __MCDS_USER_"
+     )
+         ;ADDHERE
+         SEPARATOR
+     IF  powerPROBE()
+     (
+         MENUITEM  "[:manual]PowerProbe User's Guide"           "HELP __PP_USER_"
+     )
+     IF  STG()
+     (
+         MENUITEM  "[:manual]Stimuli Generator User's Guide"    "HELP __STG_USER_"
+     )
+     IF  powerPROBE()||STG()
+     (
+         SEPARATOR
+     )
+         POPUP     "[:manual]Training Manuals"
+         (
+                   MENUITEM  "[:manual]Source Level Debugging"  "HELP __TRHLL_"
+                   MENUITEM  "[:manual]PRACTICE"                "HELP __TRPRA_"
+            IF   (CPUFAMILY()!="I386")
+            (
+                   MENUITEM  "[:manual]Debugger"                "HELP __TRICD_"
+            )
+
+            IF     (CPUFAMILY()=="TRICORE")
+            (
+                   MENUITEM  "[:manual]AURIX Trace"             "HELP __TR_AURIX_"
+            )
+
+            IF     (CPUFAMILY()=="QDSP6")
+            (
+                   MENUITEM  "[:manual]HEXAGON ETM Trace"       "HELP __TR_HEX_ETM_"
+            )
+            IF     (CPUFAMILY()=="I386")
+            (
+                   MENUITEM  "[:manual]Debugger x86/x64"        "HELP __TRICD_X86_"
+                   MENUITEM  "[:manual]Intel Processor Trace"   "HELP __TRIPT_"
+            )
+            IF     (CPUFAMILY()=="ARM")
+            (
+                   MENUITEM  "[:manual]ARM ETM Trace"           "HELP __TRETM_"
+                   MENUITEM  "[:manual]Cortex-M ETM Trace"      "HELP __TRETMCOR_"
+            )
+            IF     (CPUFAMILY()=="ARM")||(CPUFAMILY()=="MIPS")||(CPUFAMILY()=="SH")
+            (
+                   MENUITEM  "[:manual]OS Linux"                "HELP __TR_RTOS_LINUX_"
+            )
+            IF     (CPUFAMILY()=="I386")
+            (
+                   MENUITEM  "[:manual]OS Linux x86/x64"        "HELP __TR_RTOS_LINUX_X86_"
+            )
+            IF     powernexus()&&(CPUFAMILY()=="POWERPC")
+            (
+                   MENUITEM  "[:manual]Nexus Trace"             "HELP __TRNEXUS_"
+            )
+
+            IF     powerprobe()
+            (
+                   MENUITEM  "[:manual]PowerProbe"              "HELP __TRPP_"
+            )
+         )
+         SEPARATOR
+         MENUITEM  "[:pfind]Demo Scripts..."                    "WELCOME.SCRIPTS"
+         MENUITEM  "[:welcome]&Welcome to TRACE32"              "WELCOME.view"
+         SEPARATOR
+         MENUITEM  "[:config]Setup PDF &Viewer..."              "SETUP.PDFViewer"
+         SEPARATOR
+     IF  VERSION.BUILD()>5540.
+     (
+       IF OS.VERSION(0)<0x20
+       (
+         MENUITEM  "Lauterbach &Homepage"
+         (
+                   IF   OS.VERSION(0)<0x10
+                        OS.Hidden start "" "https://www.lauterbach.com"
+                   ELSE
+                        OS.screen xdg-open "https://www.lauterbach.com"
+         )
+       )
+         POPUP     "&Support"
+         (
+                   MENUITEM  "[:config]&System Information..."
+                   (
+                             PRIVATE &file
+                             &file= "~~/demo/etc/diagnosis/environment/support.cmm"
+                             IF   !OS.FILE("&file")
+                                  &file=""
+                             IF   (VERSION.BUILD()<12409.)&&("&file"!="")
+                             (
+                                  PRIVATE &line
+                                  OPEN  #1 "&file" /Read
+                                  READ  #1 %LINE &line
+                                  CLOSE #1
+                                  IF    STRing.MID("&line",0,26.)=="trace32 encrypted cmm file"
+                                        &file=""
+                             )
+                             IF   "&file"==""
+                             (
+                                  PRIVATE &src &dst &launch
+                                  &src="http://www.lauterbach.com/support/static/support.cmm"
+                                  &dst=OS.PSD()+"/demo/etc/diagnosis/environment"
+                                  WinPOS ,,,,,,,"TRACE32 System Information for Technical Support"
+                                  IF (VERSION.BUILD()>=70945.)&&(OS.VERSION(0)<0x20)
+                                  (
+                                      IF  OS.VERSION(0)<0x10
+                                          &launch="OS.Hidden start """""""""
+                                      ELSE
+                                          &launch="OS.screen xdg-open"
+                                      DIALOG.view
+                                      (&+
+                                          POS  1.0 0.50 50. 0.75
+                                          TEXT "Please download"
+                                          TEXTBUTTON ""+CONVert.CHAR(2)+CONVert.CHAR(76.+1.)+"&src"  "&launch &src"
+                                          TEXT "to"
+                                          TEXTBUTTON ""+CONVert.CHAR(2)+CONVert.CHAR(76.+1.)+OS.FILE.ABSPATH(&dst)  "&launch ""&dst"""
+                                          TEXT "and try again."
+                                          POS 40.5 4.50  9. 1.
+                                          DEFBUTTON "OK" "DIALOG.END"
+                                      )
+                                  )
+                                  ELSE
+                                  (
+                                      DIALOG.OK "Please download" "&src" "to" "&dst" "and try again."
+                                  )
+                             )
+                             ELSE
+                             (
+                                  DO "&file"
+                             )
+                   )
+             IF OS.FILE("~~/demo/etc/t32update.cmm")&&(((OS.VERSION(0)==0x02)&&((SOFTWARE.64BIT()&&OS.FILE("~~/bin/windows64/t32update.exe"))||(OS.FILE("~~/bin/windows/t32update.exe"))))||((OS.VERSION(0)>=0x10)&&(OS.VERSION(0)<=0x11)&&((SOFTWARE.64BIT()&&OS.FILE("~~/bin/pc_linux64/t32update"))||(!SOFTWARE.64BIT()&&OS.FILE("~~/bin/pc_linux/t32update"))))||((OS.VERSION(0)==0x40)&&OS.FILE("~~/bin/macosx64/t32update")))
+             (
+                   MENUITEM  "[:eload]&Update TRACE32..."
+                   (
+                             DO "~~/demo/etc/t32update.cmm"
+                   )
+             )
+             IF OS.VERSION(0)<0x20
+             (
+                   MENUITEM  "[,3@2 10@,@s@ @w8Sw@,@s@ @2Sw4@w2S@,@S@ @10S@,@S@ @2Sw4@w2S@,@S@ @10S@,@S@ @2Sw4@w2S@,@S@ @w8Sw@,@S@2 2@w3S4@,@S@4 @2S@w,@S@4 @S@w,@s@4 2@w,w@w4 @w, @5 w, w]&Technical Support Contacts"
+                   (
+                             IF   OS.VERSION(0)<0x10
+                                  OS.Hidden start "" "https://support.lauterbach.com/new-ticket"
+                             ELSE
+                                  OS.screen xdg-open "https://support.lauterbach.com/new-ticket"
+                   )
+             )
+             IF (VERSION.BUILD()>12239.)&&(VERSION.BUILD()<24341.)
+             (
+                   MENUITEM  "License details"                  "LICENSE.List"
+             )
+             IF (VERSION.BUILD()>15282.)&&(BDM())
+             (
+                IF VERSION.BUILD.BASE()>16962.
+                (
+                   MENUITEM  "Program maintenance license into cable..."
+                   (
+                             LICENSE.UPDATE license*.t32
+                             LICENSE.List
+                   )
+                )
+             )
+             IF VERSION.BUILD()>7807.
+             (
+                IF (AUTOFOCUS())&&(PowerTrace())&&(OS.FILE("~~/demo/etc/diagnosis/autofocus/afdiagnosis.cmm"))
+                (
+                   MENUITEM  "[:afocus]&AutoFocus Diagnosis"
+                   (
+                             DO "~~/demo/etc/diagnosis/autofocus/afdiagnosis.cmm"
+                   )
+                )
+             )
+;        v POPUP   "&Support"
+         )
+;    v IF VERSION.BUILD()>5540.
+     )
+         MENUITEM  "[:t32]&About TRACE32"                    "VERSION"
+; v POPUP  "&Help"
+  )
+
+)
+;^ MENU
+
+
+
+; --------------------------------------------------------------------------------
+; --------------------------------------------------------------------------------
+;  Additional speedbar buttons for dedicated windows
+; --------------------------------------------------------------------------------
+; --------------------------------------------------------------------------------
+
+ADD
+; Buttons for SYStem.DETECT SHOWChain
+BUTTONS "sys.detect.showc"
+(
+  IF SIMULATOR()
+  (
+    MENUITEM "[:refresh]refresh" "SYStem.DETECT SHOWChain"
+  )
+  ELSE
+  (
+    MENUITEM "[:refresh]refresh"
+    (
+        PRIVATE &cmd
+        &cmd=WINdow.COMMAND(WinTOP)
+        &cmd
+    )
+  )
+  IF VERSION.BUILD.BASE()>69398.
+  (
+    WIDTH WIDER
+  )
+    MENUITEM "[:config]SYStem" "SYStem.state"
+    MENUITEM "debug port"      "SYStem.CONFIG /DebugPort"
+    MENUITEM "pre / post"      "SYStem.CONFIG /JTAG"
+)
+; --------------------------------------------------------------------------------
+; --------------------------------------------------------------------------------

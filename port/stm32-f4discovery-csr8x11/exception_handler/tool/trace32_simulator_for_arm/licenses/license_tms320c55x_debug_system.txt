@@ -1,0 +1,23 @@
+License agreement for TMS320C55x debug system
+
+
+It is a mandatory condition of sale of this debug system that the purchaser agrees to the following license conditions. If the purchaser does not agree to these conditions they should return the unit, unused, in its original packaging for a full refund of the purchase price. Usage of the system for any period (no matter how short) will be taken as acceptance of these conditions.
+
+Conditions
+
+1/ It is a requirement that the user will maintain any proprietary notices (including but not limited to copyright and trademarks) that may appear in the hardware and software of the tool suite. In particular those referring to Lauterbach and its subsidiaries and Texas Instruments (TI) and its subsidiaries and affiliated companies.
+
+2/ The user also agrees to the following restrictions on the use of the C55x debugger (part number LA-7830 and subsequent variants)
+
+(a)	The Lauterbach Debugger and any applications developed using the Lauterbach Debugger will be used solely and exclusively on TI Devices (TI’s C55x cores on OMAP and TMS320 devices manufactured by or for TI) and/or a simulator for these devices developed and owned by Lauterbach or developed by or for TI; 
+(b)	Any use of the Lauterbach Debugger or any applications developed using the Lauterbach Debugger on a device other than a TI Device or an authorized Simulator is a material breach of the User License  
+(c)	The user is expressly prohibited from decompiling, reverse engineering, disassembly or other translation (or attempted translation) of the object code versions of the Lauterbach Debugger to human-perceivable form.
+
+3/  It is also acknowledged that TI is a third party beneficiary in each User License and TI has the right to enforce any of the above terms and conditions for its own benefit.
+
+Warranties and Limitations
+
+LAUTERBACH MAKES NO WARRANTIES OR REPRESENTATIONS, EITHER EXPRESS, IMPLIED OR STATUTORY, INCLUDING ANY IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, LACK OF VIRUSES, ACCURACY OR COMPLETENESS OF RESPONSES, RESULTS AND LACK OF NEGLIGENCE. LAUTERBACH DISCLAIMS ANY WARRANTY OF TITLE, QUIET ENJOYMENT, QUIET POSSESSION, AND NON-INFRINGEMENT OF ANY THIRD PARTY INTELLECTUAL PROPERTY RIGHTS WITH REGARD TO THE LICENSED MATERIALS OR YOUR USE OF THOSE MATERIALS.
+IN NO EVENT SHALL LAUTERBACH, OR ANY APPLICABLE LICENSOR, BE LIABLE FOR ANY SPECIAL, INCIDENTAL, CONSEQUENTIAL OR INDIRECT DAMAGES, HOWEVER CAUSED, ON ANY THEORY OF LIABILITY AND WHETHER OR NOT LAUTERBACH HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES, ARISING IN ANY WAY OUT OF THIS AGREEMENT, THE LICENSED MATERIALS OR YOUR USE OF THOSE MATERIALS. THESE EXCLUDED DAMAGES INCLUDE, BUT ARE NOT LIMITED TO, COST OF REMOVAL OR REINSTALLATION, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES, OUTSIDE COMPUTER TIME, LABOR COSTS, LOSS OF DATA, LOSS OF GOODWILL, LOSS OF PROFITS, LOSS OF SAVINGS, OR LOSS OF USE OR INTERRUPTION OF BUSINESS OR OTHER ECONOMIC LOSS. IN NO EVENT WILL TI’S AGGREGATE LIABILITY UNDER THIS AGREEMENT OR ARISING OUT OF YOUR USE OF THE LICENSED MATERIALS EXCEED THE FEES PAID TO LAUTERBACH BY YOU FOR THE LICENSED MATERIALS OR FIVE HUNDRED DOLLARS (US$ 500), WHICHEVER IS GREATER.
+Because some jurisdictions do not allow the exclusion or limitation of incidental or consequential damages or limitation on how long an implied warranty lasts, the above limitations or exclusions may not apply to you.
+

@@ -6,7 +6,7 @@
 .global  exception_context_pointer
 .global  exception_cm4_fault_handler
 .global  exception_test_handler
-#if defined(MTK_MEMORY_MONITOR_ENABLE)
+#if 0
 .global  memorymonitor_exception_enter_trace
 #endif
 
@@ -91,7 +91,6 @@ NMI_Handler:
 HardFault_Handler:
     mov r12, lr
     bl CommonFault_Handler
-    //bl exception_test_handler
     mov r1, #3
     ldr r3, =exception_cm4_fault_handler
     blx r3
@@ -134,7 +133,7 @@ UsageFault_Handler:
 .weak  DebugMon_Handler
 .type  DebugMon_Handler, %function
 DebugMon_Handler:
-#if !defined(MTK_MEMORY_MONITOR_ENABLE)
+#if 0
     mov r12, lr
     bl CommonFault_Handler
     mov r1, #12

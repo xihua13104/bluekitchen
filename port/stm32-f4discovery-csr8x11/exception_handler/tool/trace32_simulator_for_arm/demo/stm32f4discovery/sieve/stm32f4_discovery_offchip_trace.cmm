@@ -1,0 +1,83 @@
+;-----------------------------------------------------------------------------------
+; @Title: Off-chip trace demo for STM32F4xx derivatives
+; @Description:
+;   This is a small demo how to setup off chip ETM and ITM trace for
+;   STM32F4xx derivatives.
+;   Prerequisites : see ../stm32f4/readme.txt
+; @Keywords: Cortex-M4, debug, ETM, ITM, STM32, SWD
+; @Author: HDA
+; @Board: STM32F4DISCOVERY
+; @Chip: STM32F4*
+; @Copyright: (C) 1989-2019 Lauterbach GmbH, licensed for use with TRACE32(R) only
+; --------------------------------------------------------------------------------
+; $Id: stm32f4_discovery_offchip_trace.cmm 16869 2020-12-10 08:14:21Z pegold $
+
+; Basic setup
+  RESet
+  SYStem.RESet
+  SYStem.CPU STM32F407VG
+  SYStem.CONFIG.DEBUGPORTTYPE SWD
+IF UTRACE()||COMBIPROBE()
+(
+  SYStem.CONFIG.CONNECTOR MIPI20T
+)
+  SYStem.MemAccess DAP
+  SYStem.Option DUALPORT ON
+  SYStem.Up
+
+  Data.LOAD.auto ~~~~/demo_sram.axf
+
+; Prevent error during power saving states and stop peripherals in debug mode
+  Data.Set E:0xE0042004 %Long 0yXXXXxxxxXXX11111XXXXxxxxXXXXx111  ; DBGMCU_CR
+; Setup GPIO clock
+  Data.Set E:0x40023830 %Long 0yXXXXxxxxXXXXxxxxXXXXxxxxXXX1xxxx  ; RCC_AHB1ENR
+; Setup pin multiplexing for using the 4 bit trace
+  Data.Set E:0x40021000 %Long 0yXXXXxxxxXXXXxxxxXX1010101010xxxx  ; GPOIE_PORTMODE
+  Data.Set E:0x40021008 %Long 0yXXXXxxxxXXXXxxxxXX1111111111xxxx  ; GPOIE_PORTSPEED
+  Data.Set E:0x40021020 %Long 0yXXXX00000000000000000000XXXXxxxx  ; GPIOE_AFRL
+
+  ; Turn on ITM and ETM
+  ETM.ON
+  ITM.ON
+
+  ETM.PortMode Continuous
+  ETM.PortSize 4.
+
+  ; Slect the Analyzer (PowerTrace with Preprocessor)
+  IF hardware.COMBIPROBE()||hardware.UTRACE()
+  (
+    Trace.METHOD CAnalyzer   ; Using CombiProbe
+  )
+  ELSE IF Analyzer()
+  (
+    Trace.METHOD Analyzer    ; Using ARM preprocessor
+  )
+  IF hardware.COMBIPROBE()||hardware.UTRACE()||Analyzer()
+  (
+    Trace.AutoFocus
+  )
+  
+  ITM.PCSampler 1/64
+  Trace.OFF              ; Enable the trace and turn it off
+
+  Go.direct
+  WAIT 5.s
+  Break.direct
+
+  ; open some windows
+  WinCLEAR
+
+
+  WinPOS 0% 0% 50% 50%
+  List.auto
+
+  WinPOS 50% 0% 50% 50%
+  Trace.List
+
+  WinPOS 0% 50% 50% 50%
+  ITMTrace.list
+
+  WinPOS 50% 50% 50% 50%
+  Trace.Chart.sYmbol
+
+  ENDDO

@@ -1,0 +1,20 @@
+
+ WCLEAR
+
+ SYStem.CPU CortexA8
+ SYStem.CONFIG.COREDEBUG.Base 0x10000
+ SYStem.Up
+
+ Data.LOAD.ELF armle.axf /spath /lpath
+
+ winpos 0% 0% 100% 50%
+ w.d.l
+ winpos 0% 50% 50% 50%
+ w.v.f /l /c
+ winpos 50% 50% 50% 50%
+ w.v.w flags ast
+
+ r.s pc main
+ r.s r13 0x1000
+
+ enddo

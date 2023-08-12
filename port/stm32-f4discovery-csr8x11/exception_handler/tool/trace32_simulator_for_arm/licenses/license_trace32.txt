@@ -1,0 +1,65 @@
+End User License Agreement for Lauterbach TRACE32 software
+
+This End-User License Agreement ("EULA") is a legal agreement between you 
+(either an individual or a legal entity) and Lauterbach GmbH 
+for the TRACE32 software ("SOFTWARE PRODUCT"). 
+
+By installing, copying, or otherwise using the software, you agree to be bound by 
+the terms of this EULA. If you do not agree to these terms, 
+do not install or use the SOFTWARE PRODUCT.
+
+The SOFTWARE PRODUCT is owned by Lauterbach GmbH. It is licensed, not sold. 
+The software is protected by copyright laws and international copyright treaties, 
+as well as other intellectual property laws and treaties. 
+
+1. GRANT OF LICENSE
+LAUTERBACH GmbH grants you the right to install and use copies of the software 
+on your computer in conjunction with a hardware or software platform which is
+authorized by Lauterbach GmbH.
+
+2. LIMITATIONS
+For hardware based "in target debugging" the license only covers LAUTERBACH 
+hardware as interface to the target.
+Other hardware (like evaluation boards) is only supported in a time limited 
+evaluation mode of the software.
+Simulation platforms and software only debug solutions are protected by a license manager.
+Native debugging on Windows and Linux is allowed for the same number of seats 
+as the TRACE32 tools were initially licensed.
+TRACE32 simulators are protected by a license manager or by accessing the TRACE32 hardware.
+
+3. COPYRIGHT
+Lauterbach GmbH is the sole owner of the SOFTWARE PRODUCT's trade name, 
+copyright and distribution rights. The copyright includes the 'look&feel' 
+of the SOFTWARE PRODUCT. 
+This agreement is a license to use the SOFTWARE PRODUCT and does not imply
+a transfer of ownership of the rights thereto.
+
+4. NO WARRANTIES
+Lauterbach GmbH expressly disclaims any warranty for the SOFTWARE PRODUCT. 
+The SOFTWARE PRODUCT is provided 'As Is' without any express or implied warranty 
+of any kind, including but not limited to any warranties of merchantability, 
+non-infringement, or fitness of a particular purpose. 
+Lauterbach GmbH does not warrant or assume responsibility 
+for the accuracy or completeness of any information, text, graphics, 
+links or other items contained within the SOFTWARE PRODUCT. 
+Lauterbach GmbH makes no warranties respecting any harm 
+that may be caused by the transmission of a computer virus, worm, time bomb, 
+logic bomb, or other such computer program. Lauterbach GmbH further expressly 
+disclaims any warranty or representation to Authorized Users or to any third party.
+
+5. LIMITATION OF LIABILITY
+In no event shall Lauterbach GmbH be liable for any damages 
+(including, without limitation, lost profits, business interruption, 
+or lost information) rising out of 'Authorized Users' 
+use of or inability to use the SOFTWARE PRODUCT, even if Lauterbach GmbH has been 
+advised of the possibility of such damages. In no event will Lauterbach GmbH 
+be liable for loss of data or for indirect, special, incidental, consequential 
+(including lost profit), or other damages based in contract, tort or otherwise. 
+Lauterbach GmbH shall have no liability 
+with respect to the content of the SOFTWARE PRODUCT or any part thereof, 
+including but not limited to errors or omissions contained therein, libel, 
+infringements of rights of publicity, privacy, trademark rights, 
+business interruption, personal injury, loss of privacy, moral rights or 
+the disclosure of confidential information.
+
+Version February 2019

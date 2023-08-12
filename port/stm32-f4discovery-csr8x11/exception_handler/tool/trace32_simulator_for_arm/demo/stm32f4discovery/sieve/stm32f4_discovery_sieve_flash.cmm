@@ -1,0 +1,71 @@
+;-----------------------------------------------------------------------------------
+; @Title: Simple sieve demo running from FLASH for STM32F4xx derivatives
+; @Description:
+;   This is a small demo running from FLASH showing how to setup a debug 
+;   session  on Cortex-M4 for STM32F4DISCOVERY board. The sieve demo is   
+;   loaded on flash using the board support scripts of the TRACE32 
+;   installation.
+;   Prerequisites : see ../stm32f4/readme.txt
+; @Keywords: Cortex-M4, debug, STM32, SWD
+; @Author: HDA
+; @Board: STM32F4DISCOVERY
+; @Chip: STM32F4*
+; @Copyright: (C) 1989-2019 Lauterbach GmbH, licensed for use with TRACE32(R) only
+; --------------------------------------------------------------------------------
+; $Id: stm32f4_discovery_sieve_flash.cmm 15217 2019-11-04 16:17:15Z bschroefel $
+
+; Basic setup
+  RESet
+  SYStem.RESet
+  SYStem.CPU STM32F407VG
+  SYStem.CONFIG.DEBUGPORTTYPE SWD
+  SYStem.MemAccess DAP
+  SYStem.Option DUALPORT ON
+  SYStem.Up
+
+; Flash programming warning
+  DIALOG.YESNO "This demo will program flash memory. Do you want to continue?"
+  LOCAL &progflash
+  ENTRY &progflash
+  IF !&progflash
+  (
+    ENDDO
+  )
+
+  ; Setup flash configuration using the board support scripts of the TRACE32 installation
+  DO ~~/demo/arm/flash/stm32f4xx.cmm PREPAREONLY DUALPORT=1
+
+  ; Program the internal flash
+  FLASH.ReProgram.ALL /Erase
+  Data.LOAD.Elf ~~~~/demo_flash.axf /NosYmbol
+  FLASH.ReProgram.off
+
+  ; Reset device
+  SYStem.Down
+  SYStem.Up
+
+  ; Loading symbol information
+  Data.LOAD.Elf ~~~~/demo_flash.axf /NoCODE
+
+  Go.direct
+
+  ; open some windows
+  WinCLEAR
+
+  WinPOS 0% 0% 50% 50%
+  List.auto
+
+  WinPOS 50% 0% 50% 50%
+  Register.view /SpotLight
+
+  WinPOS 0% 50% 50% 30%
+  Frame /Locals /Caller
+
+  WinPOS 0% 80% 50% 20%
+  Var.Watch %E %SpotLight.on flags
+  Var.AddWatch ast
+
+  WinPOS 50% 50% 50% 50%
+  Var.DRAW sinewave
+
+  ENDDO

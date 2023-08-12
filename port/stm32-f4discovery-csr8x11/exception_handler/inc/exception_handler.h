@@ -7,16 +7,6 @@
 #include "stdarg.h"
 #include <stdint.h>
 #include <string.h>
-// #include "syslog.h"
-// #include "exception_config.h"
-
-#ifndef TRUE
-#define TRUE 1
-#endif
-
-#ifndef FALSE
-#define FALSE 0
-#endif
 
 /* Public define -------------------------------------------------------------*/
 #define DISABLE_MEMDUMP_MAGIC                           0xdeadbeef
