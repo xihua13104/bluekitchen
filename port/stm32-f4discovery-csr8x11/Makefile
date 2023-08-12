@@ -50,8 +50,6 @@ FREERTOS_ENABLE = n
 
 MCUBOOT_ENALBE = y
 
-EXCEPTION_HANDLER = y
-
 #######################################
 # paths
 #######################################
@@ -208,13 +206,6 @@ C_INCLUDES += ${C_INCLUDES_MCUBOOT}
 C_DEFS += ${C_DEFS_MCUBOOT}
 endif
 
-ifeq (${EXCEPTION_HANDLER}, y)
-include ${BTSTACK_ROOT}/3rd-party/exception_handler/module.mk
-C_SOURCES += ${C_SOURCES_EXCEPTION_HDR}
-C_INCLUDES += ${C_INCLUDES_EXCEPTION_HDR}
-ASM_SOURCES += ${S_SOURCE_EXCEPTION_HDR}
-endif
-
 endif
 
 ifeq (${BR_EDR_ENABLE}, y)
@@ -279,7 +270,9 @@ C_SOURCES += Src/stm32f4xx_hal_msp.c
 C_SOURCES += Src/stm32f4xx_it.c
 C_SOURCES += Src/system_stm32f4xx.c
 C_SOURCES += Src/usart.c
+C_SOURCES += exception_handler/src/exception_handler.c
 
+ASM_SOURCES += exception_handler/ARM_CM4F/GCC/exception.s
 #######################################
 # binaries
 #######################################
@@ -361,6 +354,8 @@ C_INCLUDES += -I bsp
 C_INCLUDES += -I pdm
 C_INCLUDES += -I port
 C_INCLUDES += -I src
+C_INCLUDES += -I exception_handler
+C_INCLUDES += -I exception_handler/inc
 # compile gcc flags
 ASFLAGS = $(MCU) $(AS_DEFS) $(AS_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections
 
