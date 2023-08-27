@@ -12,8 +12,9 @@
  )
 
 
-;Start the demo application
- do armc
+ ;change dir & Start the demo application
+ chdir D:\study_material\bluekitchen\source_code\bluekitchen\port\stm32-f4discovery-csr8x11\exception_handler\tool
+ do main.cmm
 
  HELP.FILTER.RESet
  HELP.FILTER.ADD    demo

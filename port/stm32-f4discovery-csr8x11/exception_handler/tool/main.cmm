@@ -1,0 +1,39 @@
+ ;macro define
+ &elf_path="../../build"
+ &binary_path="./temp"
+ &source_code_path="../../../../../bluekitchen"
+
+ title "cortex-m4 simulator"
+ WCLEAR
+ PRINT "initializing...."
+ SYStem.CPU STM32F407VG
+ SYStem.Up
+
+ ;set recursive directory of source code
+ symbol.SourcePATH.List
+ symbol.SourcePATH.SetRecurseDir &source_code_path
+
+ ;load elf file
+ PRINT "loading firmware"
+ Data.LOAD.ELF &elf_path/headset_demo.elf /path &source_code_path
+
+ ;restore memory context & register context
+ do temp/restoreMemContext.cmm
+ do temp/restoreRegContext.cmm
+
+ ;-----------------------------------------------------
+ ;open some windows
+
+ ;view call graph
+ winpos 0% 0% 100% 50%
+ w.d.l
+ 
+ ;view stack frame
+ winpos 0% 50% 50% 50%
+ w.v.f /l /c
+ 
+ ;view register
+ winpos 50% 50% 50% 50%
+ w.r
+
+ enddo

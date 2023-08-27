@@ -1,0 +1,4 @@
+Data.Load.Binary &binary_path/mem_cm4_20000000.bin 0x20000000 /noclear
+Data.Load.Binary &binary_path/mem_cm4_08025408.bin 0x8025408 /noclear
+Data.Load.Binary &binary_path/mem_cm4_200113fc.bin 0x200113fc /noclear
+Data.Load.Binary &binary_path/mem_cm4_200005e8.bin 0x200005e8 /noclear

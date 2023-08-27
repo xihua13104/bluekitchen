@@ -38,17 +38,17 @@ VPATH += ${BTSTACK_ROOT}/example
 # compile variables
 ######################################
 
-BR_EDR_ENABLE = n
+BR_EDR_ENABLE = y
 
 BLE_ENABLE = y
 
-EXAMPLE_PLUS_ENABLE = n
+EXAMPLE_PLUS_ENABLE = y
 
 FREERTOS_ENABLE = n
 
 3RD_PARTY_ENABLE = y
 
-MCUBOOT_ENALBE = y
+MCUBOOT_ENALBE = n
 
 #######################################
 # paths
@@ -574,9 +574,6 @@ remove:
 	rm $(BUILD_DIR)/*.o
 	rm $(BUILD_DIR)/*.lst
 	rm $(BUILD_DIR)/*.d
-	rm $(BUILD_DIR)/*.elf
-	rm $(BUILD_DIR)/*.jdebug
-	rm $(BUILD_DIR)/*.map
 
 #######################################
 # dependencies

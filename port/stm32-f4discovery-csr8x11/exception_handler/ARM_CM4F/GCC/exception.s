@@ -5,7 +5,6 @@
 .global  exception_stack_pointer
 .global  exception_context_pointer
 .global  exception_cm4_fault_handler
-.global  exception_test_handler
 #if 0
 .global  memorymonitor_exception_enter_trace
 #endif
@@ -133,7 +132,7 @@ UsageFault_Handler:
 .weak  DebugMon_Handler
 .type  DebugMon_Handler, %function
 DebugMon_Handler:
-#if 0
+#if 1
     mov r12, lr
     bl CommonFault_Handler
     mov r1, #12

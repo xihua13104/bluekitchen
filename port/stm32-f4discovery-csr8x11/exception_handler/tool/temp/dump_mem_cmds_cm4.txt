@@ -1,0 +1,4 @@
+restore temp/mem_cm4_0.bin binary begin with 0x20000000
+restore temp/mem_cm4_1.bin binary begin with 0x08025408
+restore temp/mem_cm4_2.bin binary begin with 0x200113fc
+restore temp/mem_cm4_3.bin binary begin with 0x200005e8

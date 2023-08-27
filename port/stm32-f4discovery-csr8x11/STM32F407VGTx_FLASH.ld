@@ -98,9 +98,11 @@ SECTIONS
   .rodata :
   {
     . = ALIGN(4);
+    _srodata = .;        /* create a global symbol at rodata start */
     *(.rodata)         /* .rodata sections (constants, strings, etc.) */
     *(.rodata*)        /* .rodata* sections (constants, strings, etc.) */
     . = ALIGN(4);
+    _erodata = .;        /* create a global symbol at rodata end */
   } >FLASH
 
   .ARM.extab   : { *(.ARM.extab* .gnu.linkonce.armextab.*) } >FLASH
@@ -137,8 +139,8 @@ SECTIONS
   /* Initialized data sections goes into RAM, load LMA copy after code */
   .data : 
   {
-    . = ALIGN(4);
     _sdata = .;        /* create a global symbol at data start */
+    . = ALIGN(4);
     *(.data)           /* .data sections */
     *(.data*)          /* .data* sections */
 
@@ -156,11 +158,10 @@ SECTIONS
   */
   .ccmram :
   {
-    . = ALIGN(4);
     _sccmram = .;       /* create a global symbol at ccmram start */
+    . = ALIGN(4);
     *(.ccmram)
     *(.ccmram*)
-    
     . = ALIGN(4);
     _eccmram = .;       /* create a global symbol at ccmram end */
   } >CCMRAM AT> FLASH
@@ -185,12 +186,14 @@ SECTIONS
   /* User_heap_stack section, used to check that there is enough RAM left */
   ._user_heap_stack :
   {
+	_suser_heap = .;
     . = ALIGN(8);
     PROVIDE ( end = . );
     PROVIDE ( _end = . );
     . = . + _Min_Heap_Size;
     . = . + _Min_Stack_Size;
     . = ALIGN(8);
+	_euser_heap = .;
   } >RAM
 
   

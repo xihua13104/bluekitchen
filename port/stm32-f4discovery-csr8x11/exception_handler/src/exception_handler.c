@@ -3,7 +3,7 @@
 #include "stm32f4xx_hal.h"
 #include "core_cm4.h"
 
-#ifdef HAL_WDT_MODULE_ENABLED
+#ifdef WDT_ENABLE
 #include "hal_wdt.h"
 #endif
 
@@ -155,8 +155,18 @@ volatile exception_config_mode_t exception_config_mode = {EXCEPTION_MEMDUMP_TEXT
 #if defined(__GNUC__)
 extern unsigned int _sdata[];
 extern unsigned int _edata[];
+extern unsigned int _srodata[];
+extern unsigned int _erodata[];
+extern unsigned int _suser_heap[];
+extern unsigned int _euser_heap[];
+extern unsigned int _sbss[];
+extern unsigned int _ebss[];
+
 const memory_region_type memory_regions[] = {
-    {"ram", _sdata, _edata, 1},
+    {"data", _sdata, _edata, 1},
+    {"rodata", _srodata, _erodata, 1},
+    {"user_heap", _suser_heap, _euser_heap, 1},
+    {"bss", _sbss, _ebss, 1},
     {0}
 };
 #endif /* __GNUC__ */
@@ -167,20 +177,20 @@ const memory_region_type memory_regions[] = {
 /******************************************************************************/
 void exception_feed_wdt(void)
 {
-#ifdef HAL_WDT_MODULE_ENABLED
+#ifdef WDT_ENABLE
 #endif
 }
 
 void exception_enable_wdt_reset(void)
 {
-#ifdef HAL_WDT_MODULE_ENABLED
+#ifdef WDT_ENABLE
 #endif
     exception_wdt_mode = EXCEPTION_WDT_RESET;
 }
 
 void exception_disable_wdt_reset(void)
 {
-#ifdef HAL_WDT_MODULE_ENABLED
+#ifdef WDT_ENABLE
 #endif
 }
 
@@ -227,52 +237,6 @@ void platform_assert(const char *expr, const char *file, int line)
     (void) primask_backup_assert;
 }
 
-void light_assert(const char *expr, const char *file, int line)
-{
-    static uint32_t primask_backup_assert = 0;
-
-    primask_backup_assert = __get_PRIMASK();
-    __disable_irq();
-
-    SCB->CCR |=  SCB_CCR_UNALIGN_TRP_Msk;
-    assert_expr.is_valid = 2;
-    assert_expr.expr = expr;
-    assert_expr.file = file;
-    assert_expr.line = line;
-    assert_expr.string = assert_string;
-    *((volatile unsigned int *) 0xFFFFFFF1) = 1;
-     while(1);
-
-    /* Just to avoid compiler warnings. */
-    (void) primask_backup_assert;
-}
-
-void __ram_assert(const char *expr, const char *file, int line)
-{
-	char exp[] = "RAM_Assert";
-
-    primask_backup_assert = __get_PRIMASK();
-    __disable_irq();
-
-    SCB->CCR |=  SCB_CCR_UNALIGN_TRP_Msk;
-    assert_expr.is_valid = 1;
-    assert_expr.expr = exp;
-    assert_expr.file = file;
-    assert_expr.line = line;
-    *((volatile unsigned int *) 0xFFFFFFF1) = 1;
-
-    while(1);
-    /* Just to avoid compiler warnings. */
-    (void) primask_backup_assert;
-}
-
-#if defined (__CC_ARM) || defined (__ICCARM__)
-void __aeabi_assert(const char *expr, const char *file, int line)
-{
-    platform_assert(expr, file, line);
-}
-#endif /* __CC_ARM */
-
 void exception_get_assert_expr(const char **expr, const char **file, int *line)
 {
     if (assert_expr.is_valid) {
@@ -308,6 +272,11 @@ static int reboot_check(void)
     return reboot_flag;
 }
 
+void exception_reboot(void)
+{
+    NVIC_SystemReset();
+}
+
 /******************************************************************************/
 /*            Exception's Dump Mode Functions                        */
 /******************************************************************************/
@@ -336,7 +305,6 @@ void exception_dump_config_check(void)
 		exception_config_mode.exception_mode_t.exception_fulldump_binary = 1;
 	}
 }
-
 
 /******************************************************************************/
 /*            Exception's regitser callbacks Functions                        */
@@ -406,20 +374,12 @@ void exception_init(void)
     exception_info.count += 1;
 
     /* Get current time stamp */
-    // hal_gpt_get_free_run_count(HAL_GPT_CLOCK_SOURCE_1M , &(exception_info.timestamp));
-    // hal_gpt_get_free_run_count(HAL_GPT_CLOCK_SOURCE_32K , &(exception_info.timestamp_32k));
+    exception_info.timestamp = HAL_GetTick();
 
-#if 0
     if (exception_config_mode.exception_mode_t.reset_after_dump == 1) {
         exception_dump_config(DISABLE_WHILELOOP_MAGIC);
     }
-#else
 
-#if (EXCEPTION_MEMDUMP_MODE & EXCEPTION_MEMDUMP_MINIDUMP) || (EXCEPTION_MEMDUMP_MODE == EXCEPTION_MEMDUMP_NODUMP)
-    exception_dump_config(DISABLE_WHILELOOP_MAGIC);
-#endif /* EXCEPTION_MEMDUMP_MODE */
-
-#endif
 }
 
 /******************************************************************************/
@@ -428,16 +388,7 @@ void exception_init(void)
 static void exception_dump_context(uint32_t stack[])
 {
     /* Context Dump */
-    // exception_context.r0   = stack[r0];
-    // exception_context.r1   = stack[r1];
-    // exception_context.r2   = stack[r2];
-    // exception_context.r3   = stack[r3];
-    // exception_context.r12  = stack[r12];
     exception_context.sp   = ((uint32_t)stack) + 0x20;
-    // exception_context.lr   = stack[lr];
-    // exception_context.pc   = stack[pc];
-    // exception_context.psr  = stack[psr];
-
     /* FPU context? */
     if ((exception_context.exc_return & 0x10) == 0) {
         exception_context.control |= 0x4; /* CONTROL.FPCA */
@@ -474,8 +425,8 @@ static void exception_dump_context(uint32_t stack[])
         exception_context.msp = exception_context.sp;
     }
 
-#if (EXCEPTION_MEMDUMP_MODE & EXCEPTION_MEMDUMP_TEXT) || (EXCEPTION_MEMDUMP_MODE & EXCEPTION_MEMDUMP_BINARY)
-    if ((exception_config_mode.exception_mode & EXCEPTION_MEMDUMP_TEXT) || (exception_config_mode.exception_mode & EXCEPTION_MEMDUMP_BINARY)) {
+#if (EXCEPTION_MEMDUMP_MODE & EXCEPTION_MEMDUMP_TEXT)
+    if (exception_config_mode.exception_mode & EXCEPTION_MEMDUMP_TEXT) {
         /* feed wdt to keep time for context dump */
         exception_feed_wdt();
 
@@ -495,7 +446,7 @@ static void exception_dump_context(uint32_t stack[])
         exception_printf("r12 = 0x%08x\r\n", exception_context.r12);
         exception_printf("lr  = 0x%08x\r\n", exception_context.lr);
         exception_printf("pc  = 0x%08x\r\n", exception_context.pc);
-        exception_printf("psr = 0x%08x\r\n", exception_context.psr);
+        exception_printf("xpsr = 0x%08x\r\n", exception_context.psr);
         exception_printf("EXC_RET = 0x%08x\r\n", exception_context.exc_return);
 
         /* FPU context? */
@@ -550,7 +501,7 @@ static void exception_dump_context(uint32_t stack[])
 /******************************************************************************/
 /*            Exception's memory dump Functions                               */
 /******************************************************************************/
-#if (EXCEPTION_MEMDUMP_MODE & EXCEPTION_MEMDUMP_TEXT) || (EXCEPTION_MEMDUMP_MODE & EXCEPTION_MEMDUMP_BINARY)
+#if (EXCEPTION_MEMDUMP_MODE & EXCEPTION_MEMDUMP_TEXT)
 static void exception_dump_region_info(const memory_region_type *static_regions, exception_user_regions_t *user_regions)
 {
     uint32_t i = 0;
@@ -607,12 +558,12 @@ static void exception_dump_region_data_text(const memory_region_type *static_reg
         current = (unsigned int *)((uint32_t)(static_regions[i].start_address) & 0xfffffffc);
         end     = (unsigned int *)(static_regions[i].end_address);
         for (; current < end; current += 4) {
-            if (*(current + 0) == 0 &&
+            /*if (*(current + 0) == 0 &&
                     *(current + 1) == 0 &&
                     *(current + 2) == 0 &&
                     *(current + 3) == 0) {
                 continue;
-            }
+            }*/
             /* feed wdt to keep time for output data */
             exception_feed_wdt();
             /* output data */
@@ -631,12 +582,12 @@ static void exception_dump_region_data_text(const memory_region_type *static_reg
             current = (unsigned int *)((uint32_t)((user_regions->regions)[i].start_address) & 0xfffffffc);
             end     = (unsigned int *)((user_regions->regions)[i].end_address);
             for (; current < end; current += 4) {
-                if (*(current + 0) == 0 &&
+                /*if (*(current + 0) == 0 &&
                         *(current + 1) == 0 &&
                         *(current + 2) == 0 &&
                         *(current + 3) == 0) {
                     continue;
-                }
+                }*/
                 /* feed wdt to keep time for output data */
                 exception_feed_wdt();
                 /* output data */
@@ -652,51 +603,11 @@ static void exception_dump_region_data_text(const memory_region_type *static_reg
 }
 #endif /* EXCEPTION_MEMDUMP_MODE */
 
-#if (EXCEPTION_MEMDUMP_MODE & EXCEPTION_MEMDUMP_BINARY)
-static void exception_dump_region_data_binary(const memory_region_type *static_regions, exception_user_regions_t *user_regions)
-{
-    uint32_t i = 0;
-    unsigned int *current, *end;
-
-    /* static regions */
-    for (i = 0; ; i++) {
-        if (!static_regions[i].region_name) {
-            break;
-        }
-        if (!static_regions[i].is_dumped) {
-            continue;
-        }
-        current = (unsigned int *)((uint32_t)(static_regions[i].start_address) & 0xfffffffc);
-        end     = (unsigned int *)(static_regions[i].end_address);
-        if (current < end) {
-            /* feed wdt to keep time for output data */
-            exception_feed_wdt();
-            /* output data */
-            log_dump_exception_data((const uint8_t *)current, (uint32_t)end - (uint32_t)current);
-        }
-    }
-
-    /* dynamic regions */
-    for (i = 0; ((i < user_regions->items) && (i < EXCEPTION_CONFIGURATIONS_MAX)); i++) {
-        if ((user_regions->regions)[i].is_dumped) {
-            current = (unsigned int *)((uint32_t)((user_regions->regions)[i].start_address) & 0xfffffffc);
-            end     = (unsigned int *)((user_regions->regions)[i].end_address);
-            if (current < end) {
-                /* feed wdt to keep time for output data */
-                exception_feed_wdt();
-                /* output data */
-                log_dump_exception_data((const uint8_t *)current, (uint32_t)end - (uint32_t)current);
-            }
-        }
-    }
-}
-#endif /* EXCEPTION_MEMDUMP_MODE */
-
 static void exception_dump_memory(void)
 {
     /* Memory Dump */
-#if (EXCEPTION_MEMDUMP_MODE & EXCEPTION_MEMDUMP_TEXT) || (EXCEPTION_MEMDUMP_MODE & EXCEPTION_MEMDUMP_BINARY)
-    if ((exception_config_mode.exception_mode & EXCEPTION_MEMDUMP_TEXT) || (exception_config_mode.exception_mode & EXCEPTION_MEMDUMP_BINARY)) {
+#if (EXCEPTION_MEMDUMP_MODE & EXCEPTION_MEMDUMP_TEXT)
+    if (exception_config_mode.exception_mode & EXCEPTION_MEMDUMP_TEXT) {
 
         /* feed wdt to keep time for memory dump */
         exception_feed_wdt();
@@ -704,7 +615,6 @@ static void exception_dump_memory(void)
         /* Print Regions' information */
         exception_printf("CM4 Regions Information:\r\n");
         exception_dump_region_info(memory_regions, &exception_user_regions);
-
 
 #if (EXCEPTION_MEMDUMP_MODE & EXCEPTION_MEMDUMP_TEXT)
         if (exception_config_mode.exception_mode & EXCEPTION_MEMDUMP_TEXT)
@@ -714,29 +624,8 @@ static void exception_dump_memory(void)
         }
 #endif /* EXCEPTION_MEMDUMP_MODE */
 
-#if (EXCEPTION_MEMDUMP_MODE & EXCEPTION_MEMDUMP_BINARY)
-        if (exception_config_mode.exception_mode & EXCEPTION_MEMDUMP_BINARY) {
-            /* Print Memory one by one regions */
-            exception_printf("CM4 Regions Data:\r\n");
-            /* Print Regions' data */
-            exception_dump_region_data_binary(memory_regions, &exception_user_regions);
-        }
-#endif /* EXCEPTION_MEMDUMP_MODE */
-
         /* dump cm4 end log */
         exception_printf("\r\nmemory dump completed.\r\n");
-    }
-#endif /* EXCEPTION_MEMDUMP_MODE */
-
-#if (EXCEPTION_MEMDUMP_MODE & EXCEPTION_MEMDUMP_MINIDUMP)
-
-    if (exception_config_mode.exception_mode & EXCEPTION_MEMDUMP_MINIDUMP) {
-
-        /* feed wdt to keep time for memory dump */
-        exception_feed_wdt();
-
-        /* dump memory data into flash */
-        exception_dump_region_data_minidump(memory_regions, &exception_user_regions);
     }
 #endif /* EXCEPTION_MEMDUMP_MODE */
 }
@@ -824,16 +713,11 @@ static void printBusFaultErrorMsg(uint32_t CFSRValue)
 /******************************************************************************/
 void exception_dump_preprocess(uint32_t fault_type)
 {
-#ifdef HAL_DWT_MODULE_ENABLED
-    uint32_t dwt_function3 = DWT->FUNCTION3;
-    uint32_t stack_end = DWT->COMP3;
-    uint32_t is_match;
-#endif
     exception_info.reason = fault_type;
     exception_info.assert_expr = &assert_expr;
 
-#if (EXCEPTION_MEMDUMP_MODE & EXCEPTION_MEMDUMP_TEXT) || (EXCEPTION_MEMDUMP_MODE & EXCEPTION_MEMDUMP_BINARY)
-    if ((exception_config_mode.exception_mode & EXCEPTION_MEMDUMP_TEXT) || (exception_config_mode.exception_mode & EXCEPTION_MEMDUMP_BINARY)) {
+#if (EXCEPTION_MEMDUMP_MODE & EXCEPTION_MEMDUMP_TEXT)
+    if (exception_config_mode.exception_mode & EXCEPTION_MEMDUMP_TEXT) {
 
         /* Genie start message */
         exception_printf("<<<<<<<< LOG START LOG START LOG START LOG START LOG START <<<<<<<<\r\n");
@@ -865,11 +749,6 @@ void exception_dump_preprocess(uint32_t fault_type)
             break;
         case EXCEPTION_DEBUGMON_FAULT:
             exception_printf("\r\nIn Debug Monitor Fault Handler\r\n");
-#ifdef HAL_DWT_MODULE_ENABLED
-            /* is task stack overflow? */
-            is_match = (dwt_function3 & DWT_FUNCTION_MATCHED_Msk) >> DWT_FUNCTION_MATCHED_Pos;
-            exception_printf("Task stack overflow:%c, stack end:0x%x \r\n", ((is_match) ? 'Y' : 'N'), (unsigned int)stack_end);
-#endif /* HAL_DWT_MODULE_ENABLED */
             break;
         default:
             exception_printf("\r\nIn Unknow Fault Handler\r\n");
@@ -896,8 +775,8 @@ void exception_dump_postprocess(void)
 {
     uint32_t i = 0;
 
-#if (EXCEPTION_MEMDUMP_MODE & EXCEPTION_MEMDUMP_TEXT) || (EXCEPTION_MEMDUMP_MODE & EXCEPTION_MEMDUMP_BINARY)
-    if ((exception_config_mode.exception_mode & EXCEPTION_MEMDUMP_TEXT) || (exception_config_mode.exception_mode & EXCEPTION_MEMDUMP_BINARY)) {
+#if (EXCEPTION_MEMDUMP_MODE & EXCEPTION_MEMDUMP_TEXT)
+    if (exception_config_mode.exception_mode & EXCEPTION_MEMDUMP_TEXT) {
         for (i = 0; i < exception_config.items; i++) {
             if (exception_config.configs[i].init_cb) {
 
@@ -910,8 +789,8 @@ void exception_dump_postprocess(void)
     }
 #endif /* EXCEPTION_MEMDUMP_MODE */
 
-#if (EXCEPTION_MEMDUMP_MODE & EXCEPTION_MEMDUMP_TEXT) || (EXCEPTION_MEMDUMP_MODE & EXCEPTION_MEMDUMP_BINARY)
-    if ((exception_config_mode.exception_mode & EXCEPTION_MEMDUMP_TEXT) || (exception_config_mode.exception_mode & EXCEPTION_MEMDUMP_BINARY)) {
+#if (EXCEPTION_MEMDUMP_MODE & EXCEPTION_MEMDUMP_TEXT)
+    if (exception_config_mode.exception_mode & EXCEPTION_MEMDUMP_TEXT) {
         /* Genie complete message */
         exception_printf("<<<<<<<< LOG END LOG END LOG END LOG END LOG END <<<<<<<<\r\n");
     }
@@ -938,7 +817,7 @@ void exception_cm4_fault_handler(uint32_t stack[], uint32_t fault_type)
 
     /* check if reboot */
     if (reboot_check() == DISABLE_WHILELOOP_MAGIC) {
-        //exception_reboot();
+        exception_reboot();
     } else {
 
         /* disable wdt reset mode for entering while loop */
@@ -949,274 +828,3 @@ void exception_cm4_fault_handler(uint32_t stack[], uint32_t fault_type)
     }
 }
 
-/******************************************************************************/
-/*                   Toolchain Dependent Part                                 */
-/******************************************************************************/
-#if defined (__CC_ARM)
-
-#define __EXHDLR_ATTR__ __asm ATTR_TEXT_IN_RAM
-
-/**
-  * @brief  This function is the common part of exception handlers.
-  * @param  r3 holds EXC_RETURN value
-  * @retval None
-  */
-__EXHDLR_ATTR__ void CommonFault_Handler(void)
-{
-    extern exception_context_pointer
-    extern exception_stack_pointer
-
-    PRESERVE8
-
-    mrs r2, primask               /* move primask to r2           */
-    cpsid i                       /* disable irq                  */
-    ldr r3, = exception_stack_pointer
-              ldr r3, [r3]                  /* r3 := exception_stack_pointer       */
-              ldr r0, = exception_context_pointer
-                        ldr r0, [r0]                  /* r0 := exception_context_pointer      */
-                        add r0, r0, #16               /* point to context.r4          */
-                        stmia r0!, {r4 - r11}         /* store r4-r11                 */
-                        mov r5, r12                   /* r5 := EXC_RETURN             */
-                        add r0, r0, #20               /* point to context.control     */
-                        mrs r1, control               /* move CONTROL to r1           */
-                        str r1, [r0], #4              /* store CONTROL                */
-                        str r5, [r0], #4              /* store EXC_RETURN             */
-                        mrs r4, msp                   /* r4 := MSP                    */
-                        str r4, [r0], #4              /* store MSP                    */
-                        mrs r1, psp                   /* move PSP to r1               */
-                        str r1, [r0], #4              /* store PSP                    */
-                        mrs r1, basepri               /* move basepri to r1           */
-                        str r1, [r0], #4              /* store basepri                */
-                        mov r1, r2                    /* move primask to r1           */
-                        str r1, [r0], #4              /* store primask                */
-                        mrs r1, faultmask             /* move faultmask to r1         */
-                        str r1, [r0]                  /* store faultmask              */
-                        tst r5, #0x10                 /* FPU context?                 */
-                        itt eq
-                        addeq r0, r0, #68             /* point to contex.s16          */
-                        vstmeq r0, {s16 - s31}        /* store s16-s31                */
-                        cmp r3, #0                    /* if (!exception_stack_pointer)       */
-                        it ne
-                        movne sp, r3                  /* update msp                   */
-                        push {lr}
-                        bl __cpp(exception_init)
-                        pop  {lr}
-                        tst r5, #4                    /* thread or handler mode?      */
-                        ite eq
-                        moveq r0, r4
-                        mrsne r0, psp
-                        bx lr
-}
-
-/**
-  * @brief  This function handles Hard Fault exception.
-  * @param  None
-  * @retval None
-  */
-__EXHDLR_ATTR__ void HardFault_Handler(void)
-{
-    PRESERVE8
-
-    mov r12, lr
-    bl __cpp(CommonFault_Handler)
-    mov r1, #3
-    bl __cpp(exception_cm4_fault_handler)
-}
-
-/**
-  * @brief  This function handles Memory Manage exception.
-  * @param  None
-  * @retval None
-  */
-__EXHDLR_ATTR__ void MemManage_Handler(void)
-{
-    PRESERVE8
-
-    mov r12, lr
-    bl __cpp(CommonFault_Handler)
-    mov r1, #4
-    bl __cpp(exception_cm4_fault_handler)
-}
-
-/**
-  * @brief  This function handles Bus Fault exception.
-  * @param  None
-  * @retval None
-  */
-__EXHDLR_ATTR__ void BusFault_Handler(void)
-{
-    PRESERVE8
-
-    mov r12, lr
-    bl __cpp(CommonFault_Handler)
-    mov r1, #5
-    bl __cpp(exception_cm4_fault_handler)
-}
-
-/**
-  * @brief  This function handles Usage Fault exception.
-  * @param  None
-  * @retval None
-  */
-__EXHDLR_ATTR__ void UsageFault_Handler(void)
-{
-    PRESERVE8
-
-    mov r12, lr
-    bl __cpp(CommonFault_Handler)
-    mov r1, #6
-    bl __cpp(exception_cm4_fault_handler)
-}
-
-#ifdef HAL_DWT_MODULE_ENABLED
-__EXHDLR_ATTR__  void DebugMon_Handler(void)
-{
-    PRESERVE8
-
-    mov r12, lr
-    bl __cpp(CommonFault_Handler)
-    mov r1, #12
-    bl __cpp(exception_cm4_fault_handler)
-}
-#endif /* HAL_DWT_MODULE_ENABLED */
-
-#endif /* __CC_ARM */
-
-#if defined (__ICCARM__)
-
-#define __EXHDLR_ATTR__  __stackless
-
-ATTR_TEXT_IN_RAM void CommonFault_Handler(void);
-ATTR_TEXT_IN_RAM void HardFault_Handler(void);
-ATTR_TEXT_IN_RAM void MemManage_Handler(void);
-ATTR_TEXT_IN_RAM void BusFault_Handler(void);
-ATTR_TEXT_IN_RAM void UsageFault_Handler(void);
-ATTR_TEXT_IN_RAM void DebugMon_Handler(void);
-
-/**
-  * @brief  This function is the common part of exception handlers.
-  * @param  r3 holds EXC_RETURN value
-  * @retval None
-  */
-__EXHDLR_ATTR__ void CommonFault_Handler(void)
-{
-    __asm volatile
-    (
-        "mrs r2, primask               \n"     /* move primask to r2          */
-        "cpsid i                       \n"     /* disable irq                 */
-        "mov r3, %0                    \n"     /* r3 := exception_stack_pointer      */
-        "mov r0, %1                    \n"     /* r0 := exception_context_pointer     */
-        "add r0, r0, #16               \n"     /* point to context.r4         */
-        "stmia r0!, {r4-r11}           \n"     /* store r4-r11                */
-        "mov r5, r12                   \n"     /* r5 := EXC_RETURN            */
-        "add r0, r0, #20               \n"     /* point to context.control    */
-        "mrs r1, control               \n"     /* move CONTROL to r1          */
-        "str r1, [r0], #4              \n"     /* store CONTROL               */
-        "str r5, [r0], #4              \n"     /* store EXC_RETURN            */
-        "mrs r4, msp                   \n"     /* r4 := MSP                   */
-        "str r4, [r0], #4              \n"     /* store MSP                   */
-        "mrs r1, psp                   \n"     /* move PSP to r1              */
-        "str r1, [r0], #4              \n"     /* store PSP                   */
-        "mrs r1, basepri               \n"     /* move basepri to r1          */
-        "str r1, [r0], #4              \n"     /* store basepri               */
-        "mov r1, r2                    \n"     /* move primask to r1          */
-        "str r1, [r0], #4              \n"     /* store primask               */
-        "mrs r1, faultmask             \n"     /* move faultmask to r1        */
-        "str r1, [r0]                  \n"     /* store faultmask             */
-        "tst r5, #0x10                 \n"     /* FPU context?                */
-        "itt eq                        \n"
-        "addeq r0, r0, #68             \n"     /* point to contex.s16         */
-        "vstmeq r0, {s16-s31}          \n"     /* store s16-s31               */
-        "cmp r3, #0                    \n"     /* if (!exception_stack_pointer)      */
-        "it ne                         \n"
-        "movne sp, r3                  \n"     /* update msp                  */
-        "push {lr}                     \n"
-        "bl exception_init             \n"
-        "pop {lr}                      \n"
-        "tst r5, #4                    \n"     /* thread or handler mode?     */
-        "ite eq                        \n"
-        "moveq r0, r4                  \n"
-        "mrsne r0, psp                 \n"
-        "bx lr                         \n"
-        ::"r"(exception_stack_pointer), "r"(exception_context_pointer)
-    );
-}
-
-/**
-  * @brief  This function handles Hard Fault exception.
-  * @param  None
-  * @retval None
-  */
-__EXHDLR_ATTR__ void HardFault_Handler(void)
-{
-    __asm volatile
-    (
-        "mov r12, lr                   \n"
-        "bl CommonFault_Handler        \n"
-        "mov r1, #3                    \n"
-        "bl exception_cm4_fault_handler\n"
-    );
-}
-
-/**
-  * @brief  This function handles Memory Manage exception.
-  * @param  None
-  * @retval None
-  */
-__EXHDLR_ATTR__ void MemManage_Handler(void)
-{
-    __asm volatile
-    (
-        "mov r12, lr                   \n"
-        "bl CommonFault_Handler        \n"
-        "mov r1, #4                    \n"
-        "bl exception_cm4_fault_handler\n"
-    );
-}
-
-/**
-  * @brief  This function handles Bus Fault exception.
-  * @param  None
-  * @retval None
-  */
-__EXHDLR_ATTR__ void BusFault_Handler(void)
-{
-    __asm volatile
-    (
-        "mov r12, lr                   \n"
-        "bl CommonFault_Handler        \n"
-        "mov r1, #5                    \n"
-        "bl exception_cm4_fault_handler\n"
-    );
-}
-
-/**
-  * @brief  This function handles Usage Fault exception.
-  * @param  None
-  * @retval None
-  */
-__EXHDLR_ATTR__ void UsageFault_Handler(void)
-{
-    __asm volatile
-    (
-        "mov r12, lr                   \n"
-        "bl CommonFault_Handler        \n"
-        "mov r1, #6                    \n"
-        "bl exception_cm4_fault_handler\n"
-    );
-}
-
-#ifdef HAL_DWT_MODULE_ENABLED
-__EXHDLR_ATTR__  void DebugMon_Handler(void)
-{
-    __asm volatile
-    (
-        "mov r12, lr                   \n"
-        "bl CommonFault_Handler        \n"
-        "mov r1, #12                   \n"
-        "bl exception_cm4_fault_handler\n"
-    );
-}
-#endif /* HAL_DWT_MODULE_ENABLED */
-
-#endif /* __ICCARM__ */

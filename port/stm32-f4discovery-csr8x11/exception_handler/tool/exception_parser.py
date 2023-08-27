@@ -1,33 +1,39 @@
 #!/usr/bin/python
 # -*- coding: UTF-8 -*-
-
+import sys
 import re
 import binascii
 import os
 
-exception_data_file = "temp/excep_data.txt"
 reg_dump_file_name = "temp/dump_reg_cmds_cm4.txt"
 mem_dump_file_name = "temp/dump_mem_cmds_cm4.txt"
+reg_resotore_cmm_file_name = "temp/restoreRegContext.cmm"
+load_binary_file_name = "temp/restoreMemContext.cmm"
 
 register_list = []
-regist_spec_name_tuple = ('lr','psr','epc1','excsave1','ps','pc','exccause','excvaddr','windowbase','windowstart')
+regist_spec_name_tuple = ('lr','xpsr','MSP','PSP','sp','pc','basepri','primask','faultmask','CONTROL')
 
 mem_dump_region_list = []
-mem_dump_pre = "temp/dump_mem_cmds_cm4_"
+mem_dump_pre = "temp/mem_cm4_"
 mem_dump_post = ".bin"
 
 def addOneRegisterValue(name , value):
     global regist_spec_name_tuple
     global register_list
+    global reg_restore_cmm_file
 
     reg_name_matched = re.match('(r\d+)',name)
     if reg_name_matched:
         register_list.append("set $" + name + '=' + value)
+        content_line = "r.s" + " " + name + " " + value + "\n"
+        reg_restore_cmm_file.write(content_line)
         return
 
     for spec_name in regist_spec_name_tuple:
         if spec_name == name:
             register_list.append("set $" + name + '=' + value)
+            content_line = "r.s" + " " + name + " " + value + "\n"
+            reg_restore_cmm_file.write(content_line)
             return
 
 #set $ar0=0x6000d4f0
@@ -56,25 +62,29 @@ def genMEMDumpCmdTxt(addr_list):
 
     DUMP_FILE.close()
 
-print "Parsing crash log in path : " + os.getcwd()
-#open exception log file,multi_chip_excep.txt, excep_data3
-EXCEP_FILE = open(exception_data_file,"r")
+#python script start
 
+if len(sys.argv) != 2:
+    print("Usage: python {} <input_file>".format(sys.argv[0]))
+    sys.exit(1)
+
+input_file = sys.argv[1]
+print "Parsing crash log：" + input_file
+EXCEP_FILE = open(input_file,"r")
 excep_data = EXCEP_FILE.read()
-
-print "read data : \n"
 excep_array = excep_data.split("\n",-1)
-
 #parse register data
 #[16:23:03]reg r1 = 0x10149297
 is_begin_for_register = 0
 last_mem_addre = 0
 dumpdata_file = None
+reg_restore_cmm_file = open(reg_resotore_cmm_file_name, "w")
+load_binary_file = open(load_binary_file_name, "w")
+
 for line in excep_array:
     if is_begin_for_register == 1:
         is_end = re.match(r'.*Register dump end\:',line)
         if is_end:
-            print "find end\n"
             is_begin_for_register = 0
             genRegDumpCmdTxt(register_list)
             #print register_list
@@ -91,7 +101,6 @@ for line in excep_array:
     if is_begin_for_register==0:
         is_begin = re.match(r'.*Register dump begin',line)
         if is_begin:
-            print "find begin\n"
             is_begin_for_register = 1
             continue
 
@@ -105,20 +114,30 @@ for line in excep_array:
         #print "cur_addr = 0x%x , last_mem_addre = 0x%x, str = %s" % (cur_addr,last_mem_addre, data_matched.group(1)[2:10])
         #生成.bin文件
         if last_mem_addre == 0:
-            dumpfile_name = mem_dump_pre + '0' + mem_dump_post
+            dumpfile_name = "{}{:08x}{}".format(mem_dump_pre, cur_addr, mem_dump_post)
+            #dumpfile_name = mem_dump_pre + '0' + mem_dump_post
+            #dumpfile_name = mem_dump_pre + hex(cur_addr) + mem_dump_post
             if (os.path.exists(dumpfile_name)):
                 os.remove(dumpfile_name)
             dumpdata_file = open(dumpfile_name, "wb")
             mem_dump_region_list.append(data_matched.group(1))
+            # Data.LOAD.BINARY &binary_path/temp/dump_mem_cm4_080424d0.bin 0x080424d0 /noclear
+            content_line = "Data.Load.Binary" + " " + "&binary_path/" + dumpfile_name.replace("temp/", "") + " " + hex(cur_addr) + " /noclear" + "\n"
+            load_binary_file.write(content_line)
         else:
-            #第n端memory region,生成新的.bin文件
+            #第n段memory region,生成新的.bin文件
             if (cur_addr - last_mem_addre != 16):
                 dumpdata_file.close()
-                dumpfile_name = mem_dump_pre + str(mem_dump_region_list.__len__()) + mem_dump_post
+                dumpfile_name = "{}{:08x}{}".format(mem_dump_pre, cur_addr, mem_dump_post)
+                #dumpfile_name = mem_dump_pre + str(mem_dump_region_list.__len__()) + mem_dump_post
+                #dumpfile_name = mem_dump_pre + hex(cur_addr) + mem_dump_post
                 if (os.path.exists(dumpfile_name)):
                     os.remove(dumpfile_name)
                 dumpdata_file = open(dumpfile_name, "wb")
                 mem_dump_region_list.append(data_matched.group(1))
+                # Data.LOAD.BINARY &binary_path/temp/dump_mem_cm4_080424d0.bin 0x080424d0 /noclear
+                content_line = "Data.Load.Binary" + " " + "&binary_path/" + dumpfile_name.replace("temp/", "") + " " + hex(cur_addr) + " /noclear" + "\n"
+                load_binary_file.write(content_line)
             #elif (cur_addr - last_mem_addre < 4):
             #    raise Exception("MEM DATA in log file has a fetal error, err id : -10001")
 
@@ -137,6 +156,12 @@ for line in excep_array:
 
 if dumpdata_file:
     dumpdata_file.close()
+
+if reg_restore_cmm_file:
+    reg_restore_cmm_file.close()
+
+if load_binary_file:
+    load_binary_file.close()
 
 print mem_dump_region_list
 
