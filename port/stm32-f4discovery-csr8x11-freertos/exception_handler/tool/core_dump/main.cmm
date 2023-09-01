@@ -1,0 +1,54 @@
+;macro define
+&elf_path="../../../build"
+&source_code_path="../../../../../../bluekitchen"
+
+title "cortex-m4 simulator"
+WCLEAR
+print "initializing...."
+SYStem.CPU STM32F407VG
+SYStem.Up
+
+;set recursive directory of source code
+symbol.SourcePATH.List
+symbol.SourcePATH.SetRecurseDir &source_code_path
+
+;load elf file
+print "loading firmware"
+Data.LOAD.ELF  &elf_path/headset_demo.elf /spath /lpath
+
+;initialize RTOS support
+task.config freertos.t32
+menu.reprogram freertos.men
+menu.reprogram debug.men
+
+;restore memory context & register context
+do restoreMemContext.cmm
+do restoreRegContext.cmm
+
+;-----------------------------------------------------
+;setup windows
+TOOLBAR ON
+STATUSBAR ON
+FramePOS 18.75,10.714,,,Maximized
+WinPAGE.RESet
+WinCLEAR
+
+;view source list
+WinPOS 0 0 50% 95% 9 9  W000
+Data.List
+
+;view frame with arguments
+WinPOS 50% 0 50% 30% 9 9  W001
+Var.Frame /A
+
+;view memory dump start of sp
+WinPOS 50% 34% 50% 33% 9 9  W002
+Data.dump r(sp) /DIALOG
+
+;view register
+WinPOS 50% 70% 50% 32% 9 9  W003
+Register /STACK
+
+WinPAGE.select P000
+
+ENDDO

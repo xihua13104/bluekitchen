@@ -1,0 +1,246 @@
+; --------------------------------------------------------------------------------
+; @Title: FreeRTOS specific menu
+; @Description: -
+; @Keywords: freertos menu awareness
+; @Author: DIE
+; @Copyright: (c) 1989-2014 Lauterbach GmbH, licensed for use with TRACE32(R) only
+; --------------------------------------------------------------------------------
+; $Id: freertos.men 1205 2014-11-19 08:55:59Z rdienstbeck $
+
+add
+menu
+(
+  popup "&FreeRTOS"
+  (
+    default
+    menuitem "Display &Tasks"        "TASK.TaskList"
+    menuitem "Display &Queues"
+    (
+      if task.avail(qreg)!=0
+        TASK.Queue
+      else
+      (
+        dialog
+        (
+          header "Display Queue"
+          pos 0x1 0x1 30.
+addr:   defedit "" ""
+          pos 32. 1. 7.
+          button "Browse..."
+          (
+            local &wildcard
+            &wildcard=dialog.string(addr)
+            if "&wildcard"==""
+              &wildcard="*Queue"
+            if !string.find("&wildcard","*?")
+              &wildcard="*&wildcard*"
+            symbol.browse.v &wildcard * /c "dialog.set addr ""*""" /d
+          )
+          pos 40. 1. 7.
+          defbutton "Ok"
+          (
+            local &addr
+            &addr=dialog.string(addr)
+            if cpufamily()=="M68HC12"
+                TASK.Queue data.word(&addr)
+            else
+                TASK.Queue data.long(&addr)
+            dialog.end
+          )
+          pos 0. 0. 49. 3.
+          box "Queue"
+        )
+      )
+    )
+    separator
+    popup "&Stack Coverage"
+    (
+      menuitem "&List Stacks"
+      (
+        if !ice()&&!fire()
+          TASK.STacK.PATtern 0xa5
+        TASK.STacK.view
+      )
+      menuitem "Add Task"        "TASK.STacK.ADD"
+      menuitem "Remove Task"     "TASK.STacK.RM"
+      enable ice()||fire()
+      menuitem "&Reset Coverage" "TASK.STacK.RESet"
+    )
+  )
+  popup "Trace"
+  (
+    popup "List"
+    (
+      separator
+      menuitem "&Task Switches"     "Trace.List List.TASK"
+      menuitem "&Default and Tasks" "Trace.List List.TASK DEFault"
+    )
+  )
+  popup "Perf"
+  (
+    separator
+    popup "&Task Runtime"
+    (
+      menuitem "&Prepare"
+      (
+        if t.method.analyzer()
+        (
+          Analyzer.AutoInit on
+        )
+        if (ice()||fire())&&!a.mode.flow()
+        (
+          Analyzer.ReProgram
+          (
+            Sample.Enable if AlphaBreak&&Write
+          )
+          Break.Delete /Alpha
+          Break.Set task.config(magic)++(task.config(magicsize)-1) /Alpha
+        )
+        if a.mode.flow()
+        (
+          Break.Delete /TraceEnable
+          Break.Set task.config(magic) /TraceEnable
+        )
+      )
+      menuitem "[:perf]Show &Numerical"   "Trace.STATistic.TASK"
+      menuitem "[:achart]Show as &Timing" "Trace.CHART.TASK"
+      menuitem "[:achart]Tracking with Trace &List"
+      (
+        Trace.List List.TASK DEFault /Track
+        Trace.CHART.TASK /Track
+      )
+    )
+    popup "Task &Function Runtime"
+    (
+      menuitem "&Prepare"
+      (
+        if t.method.analyzer()
+        (
+          Analyzer.AutoInit on
+          Analyzer.STATistic.PreFetch on
+        )
+
+        if (ice()||fire())&&!a.mode.flow()
+        (
+          if a.config.hac()
+          (
+             Analyzer.ReProgram
+             (
+               Sample.Enable if AlphaBreak
+               Sample.Enable if BetaBreak
+               Mark.A        if AlphaBreak
+               Mark.B        if BetaBreak
+             )
+          )
+          else
+          (
+             Analyzer.ReProgram
+             (
+               Sample.Enable if AlphaBreak||BetaBreak
+               Mark.A if AlphaBreak
+               Mark.B if BetaBreak
+             )
+          )
+          Break.Delete /Alpha /Beta /Charly
+          Break.SetFunc
+          Break.Set task.config(magic)++(task.config(magicsize)-1) /Alpha
+        )
+        if a.mode.flow()
+        (
+          Break.Delete /TraceData
+          Break.Set task.config(magic) /TraceData
+        )
+      )
+      menuitem "[:perf]Show &Numerical"     "Trace.STATistic.TASKFUNC"
+      menuitem "[:perf]Show as &Tree"       "Trace.STATistic.TASKTREE"
+      menuitem "[:perf]Show &Detailed Tree" "Trace.STATistic.TASKTREE ALL"
+      menuitem "[:achart]Show as &Timing"   "Trace.CHART.TASKFUNC"
+      menuitem "[:alist]Show N&esting"      "Trace.List List.TASK FUNC TI.FUNC"
+    )
+    ;popup "Task &Status"
+    ;(
+    ;  menuitem "&Prepare"
+    ;  (
+    ;    if t.method.analyzer()
+    ;    (
+    ;      Analyzer.AutoInit on
+    ;    )
+    ;    if (ice()||fire())&&!a.mode.flow()
+    ;    (
+    ;      Analyzer.ReProgram
+    ;      (
+    ;        Sample.Enable if AlphaBreak&&Write
+    ;      )
+    ;      Break.Delete /Alpha
+    ;      Break.Set task.config(magic)++(task.config(magicsize)-1) /Alpha
+    ;      TASK.TASKState
+    ;    )
+    ;  )
+    ;  menuitem "[:perf]Show &Numerical"   "Trace.STATistic.TASKSTATE"
+    ;  menuitem "[:achart]Show as &Timing" "Trace.CHART.TASKSTATE"
+    ;  menuitem "[:achart]Tracking with Trace &List"
+    ;  (
+    ;    Trace.List List.TASK DEFault /Track
+    ;    Trace.CHART.TASKSTATE /Track
+    ;  )
+    ;)
+  )
+  popup "&Help"
+  (
+    menuitem "Linux Awareness Manual" "HELP __RTOS_FREERTOS_"
+  )
+)
+
+
+menu "task.tl"
+(
+  default
+  ;menuitem "Display detailed"
+  ;(
+  ;  &address=address.offset(track.address())
+  ;  TASK.TaskList &address
+  ;)
+  menuitem "Display task struct"
+  (
+    &address=address.offset(track.address())
+    &struct=task.struct(tcb)
+    Var.View %Open %String (&struct*)&address
+  )
+  separator
+  menuitem "Display Stack Frame"  "Var.Frame /Locals /Caller /Task track.address()"
+  menuitem "Display Registers"    "Register /Task track.address()"
+  menuitem "Switch Context"       "Register.TASK track.address()"
+  menuitem "MTK Switch Context"   "do task_context.cmm track.address()"
+  separator
+  menuitem "Add to Stack Cov"  "TASK.STK.ADD address.offset(track.address())"
+  menuitem "Rm from Stack Cov" "TASK.STK.RM  address.offset(track.address())"
+  separator
+  menuitem "Dump task entry"
+  (
+    &address=address.offset(track.address())
+    Data.dump &address /l /dialog
+  )
+)
+
+
+menu "task.q"
+(
+  default
+  menuitem "Display detailed"
+  (
+    &address=address.offset(track.address())
+    TASK.Queue &address
+  )
+  menuitem "Display queue struct"
+  (
+    &address=address.offset(track.address())
+    &struct=task.struct(queue)
+    Var.View %Open %String (&struct*)&address
+  )
+  separator
+  menuitem "Dump queue entry"
+  (
+    &address=address.offset(track.address())
+    Data.dump &address /l /dialog
+  )
+)

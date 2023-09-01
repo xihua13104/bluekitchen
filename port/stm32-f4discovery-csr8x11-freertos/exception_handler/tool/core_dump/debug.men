@@ -1,0 +1,120 @@
+
+
+
+add
+menu
+(
+  popup "&DEBUG"
+  (
+     menuitem "&Save Cur State"      "gosub Save_CurWinReg"    
+     menuitem "&SP Step Down"      "gosub SpStepDown"  
+     menuitem "&SP Step Up"      "gosub SpStepUp"   
+     menuitem "&Auto SP Down Try"      "gosub AutoSpDownTry"  
+     menuitem "&Auto SP Up Try"      "gosub AutoSpUpTry"  
+  )
+ )
+ 
+  
+ ;BITMAPEDIT  16*16
+ADD
+TOOLBAR
+(
+TOOLITEM "Save Cur State" "gosub Save_CurWinReg"
+[
+@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@
+@@@          @@@
+@@@@@@@@@@@@@@@@
+@@@          @@@
+@@@@@@@@@@@@@@@@
+@@@          @@@
+@@@          @@@
+@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@
+@@@          @@@
+@@@ @@       @@@
+@@@ @@       @@@
+@@@          @@@
+@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@
+]
+
+
+
+TOOLITEM "SP Step Down" "gosub SpStepDown"
+[
+
+
+
+  @@@@@@@@@@@@
+  @@@@@@@@@@@@
+   @@@@@@@@@@
+    @@@@@@@@ 
+     @@@@@@
+      @@@@
+       @@
+  @@@@@@@@@@@@
+  @@@@@@@@@@@@
+  @@@@@@@@@@@@
+
+
+
+]
+
+TOOLITEM "SP Step Up" "gosub SpStepUp"
+[
+
+
+
+  @@@@@@@@@@@@
+  @@@@@@@@@@@@
+  @@@@@@@@@@@@
+       @@  
+      @@@@   
+     @@@@@@    
+    @@@@@@@@   
+   @@@@@@@@@@             
+  @@@@@@@@@@@@
+  @@@@@@@@@@@@
+
+
+
+]
+
+TOOLITEM "Auto SP Down Try" "gosub AutoSpDownTry"
+[
+
+ 
+  @@@@@@@@@@@@
+   @@@@@@@@@@
+    @@@@@@@@ 
+     @@@@@@
+      @@@@
+       @@
+  @@@@@@@@@@@@
+   @@@@@@@@@@
+    @@@@@@@@ 
+     @@@@@@
+      @@@@
+       @@
+
+]
+TOOLITEM "Auto SP Up Try" "gosub AutoSpUpTry"
+[
+
+
+       @@
+      @@@@
+     @@@@@@
+    @@@@@@@@
+   @@@@@@@@@@
+  @@@@@@@@@@@@
+       @@
+      @@@@
+     @@@@@@
+    @@@@@@@@
+   @@@@@@@@@@
+  @@@@@@@@@@@@
+ 
+]
+)

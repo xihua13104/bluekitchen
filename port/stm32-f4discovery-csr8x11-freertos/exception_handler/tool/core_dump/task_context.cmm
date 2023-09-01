@@ -1,0 +1,100 @@
+entry &addr
+&value=data.long(sd:&addr)
+&pxCurrentTCB=var.value(pxCurrentTCB)
+IF &pxCurrentTCB==address.offset(&addr)
+(
+do restoreRegContext.cmm
+ENDDO
+)
+&exc_return=data.long(sd:&value+0x20)
+IF &exc_return==0xFFFFFFFD
+(
+r.s r4 data.long(sd:&value+0x0)
+r.s r5 data.long(sd:&value+0x4)
+r.s r6 data.long(sd:&value+0x8)
+r.s r7 data.long(sd:&value+0xc)
+r.s r8 data.long(sd:&value+0x10)
+r.s r9 data.long(sd:&value+0x14)
+r.s r10 data.long(sd:&value+0x18)
+r.s r11 data.long(sd:&value+0x1c)
+r.s r0 data.long(sd:&value+0x24)
+r.s r1 data.long(sd:&value+0x28)
+r.s r2 data.long(sd:&value+0x2c)
+r.s r3 data.long(sd:&value+0x30)
+r.s r12 data.long(sd:&value+0x34)
+r.s r14 data.long(sd:&value+0x38)
+r.s pc data.long(sd:&value+0x3c)
+&xpsr=data.long(sd:&value+0x40)
+r.s xpsr &xpsr
+r.s control 0x2
+IF (&xpsr&0x00000200)==0
+(
+r.s r13 &value+0x44
+)
+ELSE
+(
+r.s r13 &value+0x48
+)
+)
+ELSE IF &exc_return==0xFFFFFFED
+(
+r.s r4 data.long(sd:&value+0x0)
+r.s r5 data.long(sd:&value+0x4)
+r.s r6 data.long(sd:&value+0x8)
+r.s r7 data.long(sd:&value+0xc)
+r.s r8 data.long(sd:&value+0x10)
+r.s r9 data.long(sd:&value+0x14)
+r.s r10 data.long(sd:&value+0x18)
+r.s r11 data.long(sd:&value+0x1c)
+fpu.s s16 data.long(sd:&value+0x24)
+fpu.s s17 data.long(sd:&value+0x28)
+fpu.s s18 data.long(sd:&value+0x2c)
+fpu.s s19 data.long(sd:&value+0x30)
+fpu.s s20 data.long(sd:&value+0x34)
+fpu.s s21 data.long(sd:&value+0x38)
+fpu.s s22 data.long(sd:&value+0x3c)
+fpu.s s23 data.long(sd:&value+0x40)
+fpu.s s24 data.long(sd:&value+0x44)
+fpu.s s25 data.long(sd:&value+0x48)
+fpu.s s26 data.long(sd:&value+0x4c)
+fpu.s s27 data.long(sd:&value+0x50)
+fpu.s s28 data.long(sd:&value+0x54)
+fpu.s s29 data.long(sd:&value+0x58)
+fpu.s s30 data.long(sd:&value+0x5c)
+fpu.s s31 data.long(sd:&value+0x60)
+r.s r0 data.long(sd:&value+0x64)
+r.s r1 data.long(sd:&value+0x68)
+r.s r2 data.long(sd:&value+0x6c)
+r.s r3 data.long(sd:&value+0x70)
+r.s r12 data.long(sd:&value+0x74)
+r.s r14 data.long(sd:&value+0x78)
+r.s pc data.long(sd:&value+0x7c)
+&xpsr=data.long(sd:&value+0x80)
+r.s xpsr &xpsr
+fpu.s s0 data.long(sd:&value+0x84)
+fpu.s s1 data.long(sd:&value+0x88)
+fpu.s s2 data.long(sd:&value+0x8c)
+fpu.s s3 data.long(sd:&value+0x90)
+fpu.s s4 data.long(sd:&value+0x94)
+fpu.s s5 data.long(sd:&value+0x98)
+fpu.s s6 data.long(sd:&value+0x9c)
+fpu.s s7 data.long(sd:&value+0xa0)
+fpu.s s8 data.long(sd:&value+0xa4)
+fpu.s s9 data.long(sd:&value+0xa8)
+fpu.s s10 data.long(sd:&value+0xac)
+fpu.s s11 data.long(sd:&value+0xb0)
+fpu.s s12 data.long(sd:&value+0xb4)
+fpu.s s13 data.long(sd:&value+0xb8)
+fpu.s s14 data.long(sd:&value+0xbc)
+fpu.s s15 data.long(sd:&value+0xc0)
+fpu.s fpscr data.long(sd:&value+0xc4)
+r.s control 0x6
+IF (&xpsr&0x00000200)==0
+(
+r.s r13 &value+0xcc
+)
+ELSE
+(
+r.s r13 &value+0xd0
+)
+)
