@@ -13,7 +13,7 @@
 
 
  ;change dir & Start the demo application
- chdir D:\study_material\bluekitchen\source_code\bluekitchen\port\stm32-f4discovery-csr8x11\exception_handler\tool
+ chdir D:\study_material\bluekitchen\source_code\bluekitchen\port\stm32-f4discovery-csr8x11-freertos\exception_handler\tool\core_dump
  do main.cmm
 
  HELP.FILTER.RESet

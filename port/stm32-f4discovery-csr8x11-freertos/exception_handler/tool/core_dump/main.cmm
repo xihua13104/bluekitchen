@@ -19,7 +19,7 @@ Data.LOAD.ELF  &elf_path/headset_demo.elf /spath /lpath
 ;initialize RTOS support
 task.config freertos.t32
 menu.reprogram freertos.men
-menu.reprogram debug.men
+;menu.reprogram debug.men
 
 ;restore memory context & register context
 do restoreMemContext.cmm

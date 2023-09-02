@@ -135,9 +135,17 @@ void hal_uart_dma_set_sleep(uint8_t sleep){
 static void bluetooth_power_cycle(void){
 	printf("Bluetooth power cycle\n");
 	HAL_GPIO_WritePin( CC_nSHUTD_GPIO_Port, CC_nSHUTD_Pin, GPIO_PIN_RESET );
+#ifdef BTSTACK_FREERTOS_ENABLE
 	vTaskDelay(250);
+#else
+    HAL_Delay(250);
+#endif
 	HAL_GPIO_WritePin( CC_nSHUTD_GPIO_Port, CC_nSHUTD_Pin, GPIO_PIN_SET );
-	vTaskDelay( 500 );
+#ifdef BTSTACK_FREERTOS_ENABLE
+	vTaskDelay(500);
+#else
+    HAL_Delay(500);
+#endif
 }
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart){

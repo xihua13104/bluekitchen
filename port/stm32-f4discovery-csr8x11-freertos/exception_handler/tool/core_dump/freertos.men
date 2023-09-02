@@ -209,8 +209,8 @@ menu "task.tl"
   separator
   menuitem "Display Stack Frame"  "Var.Frame /Locals /Caller /Task track.address()"
   menuitem "Display Registers"    "Register /Task track.address()"
-  menuitem "Switch Context"       "Register.TASK track.address()"
-  menuitem "MTK Switch Context"   "do task_context.cmm track.address()"
+  ;menuitem "Switch Context"       "Register.TASK track.address()"
+  menuitem "Switch Context"   "do task_context.cmm track.address()"
   separator
   menuitem "Add to Stack Cov"  "TASK.STK.ADD address.offset(track.address())"
   menuitem "Rm from Stack Cov" "TASK.STK.RM  address.offset(track.address())"
