@@ -54,7 +54,11 @@ static const hci_transport_config_uart_t config = {
 // hal_time_ms.h
 #include "hal_time_ms.h"
 uint32_t hal_time_ms(void){
+#ifdef BTSTACK_FREERTOS_ENABLE
+    return xTaskGetTickCount();
+#else
 	return HAL_GetTick();
+#endif
 }
 
 // hal_cpu.h implementation
@@ -382,16 +386,17 @@ void port_main(void) {
 #if !defined(MCUBOOT_IMG_BOOTLOADER)
     // start with BTstack init - especially configure HCI Transport
     btstack_memory_init();
-#ifdef BTSTACK_FREERTOS_ENABLE
-    btstack_run_loop_init(btstack_run_loop_freertos_get_instance());
-#else
-    btstack_run_loop_init(btstack_run_loop_embedded_get_instance());
-#endif
     // uncomment to enable packet logger
 #ifdef ENABLE_SEGGER_RTT
     hci_dump_init(hci_dump_segger_rtt_stdout_get_instance());
 #else
     hci_dump_init(hci_dump_embedded_stdout_get_instance());
+#endif
+
+#ifdef BTSTACK_FREERTOS_ENABLE
+    btstack_run_loop_init(btstack_run_loop_freertos_get_instance());
+#else
+    btstack_run_loop_init(btstack_run_loop_embedded_get_instance());
 #endif
 	// init HCI
 #ifdef BTSTACK_FREERTOS_ENABLE
@@ -399,6 +404,7 @@ void port_main(void) {
 #else
     hci_init(hci_transport_h4_instance(btstack_uart_block_embedded_instance()), (void*) &config);
 #endif
+
     hci_set_chipset(btstack_chipset_csr_instance());
 
     // setup TLV Flash Sector implementation
