@@ -153,24 +153,11 @@ volatile exception_config_mode_t exception_config_mode = {EXCEPTION_MEMDUMP_TEXT
 /*            Memory Regions Definition                                       */
 /******************************************************************************/
 #if defined(__GNUC__)
-extern unsigned int _sdata[];
-extern unsigned int _edata[];
-extern unsigned int _srodata[];
-extern unsigned int _erodata[];
-extern unsigned int _suser_heap[];
-extern unsigned int _euser_heap[];
-extern unsigned int _sbss[];
-extern unsigned int _ebss[];
-
 extern unsigned int _sstack[];
 extern unsigned int _estack[];
+extern unsigned int _srodata[];
+extern unsigned int _erodata[];
 const memory_region_type memory_regions[] = {
-#if 0
-     {"data", _sdata, _edata, 1},
-
-     {"user_heap", _suser_heap, _euser_heap, 1},
-     {"bss", _sbss, _ebss, 1},
-#endif
     {"ram", _sstack, _estack, 1},
     {"rodata", _srodata, _erodata, 1},
     {0}/*  */

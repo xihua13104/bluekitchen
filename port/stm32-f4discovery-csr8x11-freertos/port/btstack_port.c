@@ -1,4 +1,4 @@
-#define __BTSTACK_FILE__ "port.c"
+#define __BTSTACK_FILE__ "btstack_port.c"
 
 // include STM32 first to avoid warning about redefinition of UNUSED
 #include "stm32f4xx_hal.h"
@@ -26,6 +26,11 @@
 #include "hci_dump_segger_rtt_stdout.h"
 #else
 #include "hci_dump_embedded_stdout.h"
+#endif
+
+#ifdef BTSTACK_FREERTOS_ENABLE
+#include "FreeRTOS.h"
+#include "task.h"
 #endif
 
 extern UART_HandleTypeDef huart2;//system log uart or hci log uart

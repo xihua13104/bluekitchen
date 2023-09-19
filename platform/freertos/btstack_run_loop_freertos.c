@@ -201,7 +201,7 @@ static void btstack_run_loop_freertos_execute(void) {
             timeout_ms = (uint32_t) timeout_next_timer_ms;
         }
 
-        log_debug("RL: wait with timeout %u", (int) timeout_ms);
+        log_debug("RL: wait with timeout 0x%x", (int) timeout_ms);
 #ifdef HAVE_FREERTOS_TASK_NOTIFICATIONS
         xTaskNotifyWait(pdFALSE, 0xffffffff, NULL, pdMS_TO_TICKS(timeout_ms));
 #else
