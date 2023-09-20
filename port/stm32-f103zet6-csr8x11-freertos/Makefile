@@ -168,25 +168,25 @@ C_SOURCES += ${BTSTACK_ROOT}/3rd-party/lwip/core/src/apps/http/httpd.c
 C_SOURCES += ${BTSTACK_ROOT}/3rd-party/lwip/dhcp-server/dhserver.c
 endif
 
-VPATH += ${BTSTACK_ROOT}/example/nordic_dfu
-VPATH += ${BTSTACK_ROOT}/example/nordic_dfu/nano-pb
+# VPATH += ${BTSTACK_ROOT}/example/nordic_dfu
+# VPATH += ${BTSTACK_ROOT}/example/nordic_dfu/nano-pb
 
-C_SOURCES += ${BTSTACK_ROOT}/example/nordic_dfu/nrf_dfu.c
-C_SOURCES += ${BTSTACK_ROOT}/example/nordic_dfu/nrf_dfu_transport.c
-C_SOURCES += ${BTSTACK_ROOT}/example/nordic_dfu/nrf_dfu_ble.c
-C_SOURCES += ${BTSTACK_ROOT}/example/nordic_dfu/nrf_dfu_req_handler.c
-C_SOURCES += ${BTSTACK_ROOT}/example/nordic_dfu/nrf_dfu_settings.c
-C_SOURCES += ${BTSTACK_ROOT}/example/nordic_dfu/nrf_dfu_utils.c
-C_SOURCES += ${BTSTACK_ROOT}/example/nordic_dfu/dfu-cc.pb.c
-#C_SOURCES += ${BTSTACK_ROOT}/example/nordic_dfu/nrf_dfu_flash.c
-C_SOURCES += ${BTSTACK_ROOT}/example/nordic_dfu/nrf_dfu_validation.c
-C_SOURCES += ${BTSTACK_ROOT}/example/nordic_dfu/nrf_dfu_handling_error.c
-C_SOURCES += ${BTSTACK_ROOT}/example/nordic_dfu/crc32.c
+# C_SOURCES += ${BTSTACK_ROOT}/example/nordic_dfu/nrf_dfu.c
+# C_SOURCES += ${BTSTACK_ROOT}/example/nordic_dfu/nrf_dfu_transport.c
+# C_SOURCES += ${BTSTACK_ROOT}/example/nordic_dfu/nrf_dfu_ble.c
+# C_SOURCES += ${BTSTACK_ROOT}/example/nordic_dfu/nrf_dfu_req_handler.c
+# C_SOURCES += ${BTSTACK_ROOT}/example/nordic_dfu/nrf_dfu_settings.c
+# C_SOURCES += ${BTSTACK_ROOT}/example/nordic_dfu/nrf_dfu_utils.c
+# C_SOURCES += ${BTSTACK_ROOT}/example/nordic_dfu/dfu-cc.pb.c
+# #C_SOURCES += ${BTSTACK_ROOT}/example/nordic_dfu/nrf_dfu_flash.c
+# C_SOURCES += ${BTSTACK_ROOT}/example/nordic_dfu/nrf_dfu_validation.c
+# C_SOURCES += ${BTSTACK_ROOT}/example/nordic_dfu/nrf_dfu_handling_error.c
+# C_SOURCES += ${BTSTACK_ROOT}/example/nordic_dfu/crc32.c
 
-C_SOURCES += ${BTSTACK_ROOT}/example/nordic_dfu/nano-pb/pb_common.c
-C_SOURCES += ${BTSTACK_ROOT}/example/nordic_dfu/nano-pb/pb_decode.c
-C_SOURCES += ${BTSTACK_ROOT}/example/nordic_dfu/nano-pb/pb_encode.c
-#C_SOURCES += ${BTSTACK_ROOT}/example/nordic_dfu/nano-pb/pb_common.c
+# C_SOURCES += ${BTSTACK_ROOT}/example/nordic_dfu/nano-pb/pb_common.c
+# C_SOURCES += ${BTSTACK_ROOT}/example/nordic_dfu/nano-pb/pb_decode.c
+# C_SOURCES += ${BTSTACK_ROOT}/example/nordic_dfu/nano-pb/pb_encode.c
+# #C_SOURCES += ${BTSTACK_ROOT}/example/nordic_dfu/nano-pb/pb_common.c
 
 
 C_SOURCES += ${BTSTACK_ROOT}/example/sco_demo_util.c
@@ -358,8 +358,8 @@ C_INCLUDES += -I${BTSTACK_ROOT}/platform/lwip
 C_INCLUDES += -I${BTSTACK_ROOT}/platform/lwip/port
 C_INCLUDES += -I${BTSTACK_ROOT}/chipset/csr
 C_INCLUDES += -I${BTSTACK_ROOT}/tool
-C_INCLUDES += -I${BTSTACK_ROOT}/example/nordic_dfu
-C_INCLUDES += -I${BTSTACK_ROOT}/example/nordic_dfu/nano-pb
+# C_INCLUDES += -I${BTSTACK_ROOT}/example/nordic_dfu
+# C_INCLUDES += -I${BTSTACK_ROOT}/example/nordic_dfu/nano-pb
 
 C_INCLUDES += -I Port
 C_INCLUDES += -I Src
@@ -430,7 +430,7 @@ EXAMPLES += 				\
 	spp_streamer			\
 	spp_streamer_client     \
 	nordic_spp_le_counter	\
-	nordic_dfu_demo			\
+	# nordic_dfu_demo			\
 
 
 GATT_FILES = \
@@ -447,7 +447,7 @@ GATT_FILES = \
 	spp_and_gatt_counter.gatt \
 	spp_and_gatt_streamer.gatt \
 	nordic_spp_le_counter.gatt	\
-	nordic_dfu_demo.gatt	   \
+	# nordic_dfu_demo.gatt	   \
 
 #EXAMPLES = nordic_dfu_demo
 #GATT_FILES = nordic_dfu_demo.gatt

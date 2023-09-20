@@ -42,7 +42,6 @@ typedef struct {
 typedef struct {
     uint32_t count;
     uint32_t timestamp;
-    uint32_t timestamp_32k;
     uint32_t reason;
     assert_expr_t *assert_expr;
 } exception_info_t;
@@ -147,8 +146,6 @@ static uint32_t exception_wdt_mode = 0;
 static uint32_t double_assert_flag = 0;
 static uint32_t double_assert_lr = 0;
 
-volatile exception_config_mode_t exception_config_mode = {EXCEPTION_MEMDUMP_TEXT};
-
 /******************************************************************************/
 /*            Memory Regions Definition                                       */
 /******************************************************************************/
@@ -178,7 +175,6 @@ void exception_enable_wdt_reset(void)
 {
 #ifdef WDT_ENABLE
 #endif
-    exception_wdt_mode = EXCEPTION_WDT_RESET;
 }
 
 void exception_disable_wdt_reset(void)
@@ -189,27 +185,8 @@ void exception_disable_wdt_reset(void)
 
 void exception_enable_wdt_interrupt(void)
 {
-    if ((exception_wdt_mode != EXCEPTION_WDT_INTERRUPT) && (exception_info.reason != EXCEPTION_NMI)) {
-        exception_wdt_mode = EXCEPTION_WDT_INTERRUPT;
-    }
-}
-
-/******************************************************************************/
-/*            Exception's assert Functions                                    */
-/******************************************************************************/
-void abort(void)
-{
-    static uint32_t primask_backup_abort = 0;
-
-    primask_backup_abort = __get_PRIMASK();
-    __disable_irq();
-
-    SCB->CCR |=  SCB_CCR_UNALIGN_TRP_Msk;
-    *((volatile unsigned int *) 0xFFFFFFF1) = 1;
-    for (;;);
-
-    /* Just to avoid compiler warnings. */
-    (void) primask_backup_abort;
+#ifdef WDT_ENABLE
+#endif
 }
 
 void platform_assert(const char *expr, const char *file, int line)
@@ -275,52 +252,8 @@ void exception_reboot(void)
 /******************************************************************************/
 int exception_dump_config_init(void)
 {
+    exception_dump_config(0);
     return 0;
-}
-
-void exception_dump_config_check(void)
-{
-	uint8_t mode = 0;
-
-	/* check mode */
-	if (exception_config_mode.exception_mode == 0) {
-		/* error status, exception_dump_mode should not be 0 */
-		exception_config_mode.exception_mode_t.reset_after_dump = 1;
-		exception_config_mode.exception_mode_t.exception_fulldump_binary = 1;
-	}
-
-	mode = (uint8_t)(exception_config_mode.exception_mode & 0xff);
-	if ((mode != (uint8_t)((exception_config_mode.exception_mode >>  8) & 0xff)) ||
-			(mode != (uint8_t)((exception_config_mode.exception_mode >> 16) & 0xff)) ||
-			(mode != (uint8_t)((exception_config_mode.exception_mode >> 24) & 0xff))) {
-		/* error status, exception_dump_mode should be a 4 Byets-repeated data*/
-		exception_config_mode.exception_mode_t.reset_after_dump = 1;
-		exception_config_mode.exception_mode_t.exception_fulldump_binary = 1;
-	}
-}
-
-/******************************************************************************/
-/*            Exception's regitser callbacks Functions                        */
-/******************************************************************************/
-exception_status_t exception_register_callbacks(exception_config_type *cb)
-{
-    int i;
-
-    if (exception_config.items >= EXCEPTION_CONFIGURATIONS_MAX) {
-        return EXCEPTION_STATUS_ERROR;
-    } else {
-        /* check if it is already registered */
-        for (i = 0; i < exception_config.items; i++) {
-            if (exception_config.configs[i].init_cb == cb->init_cb
-                    && exception_config.configs[i].dump_cb == cb->dump_cb) {
-                return EXCEPTION_STATUS_ERROR;
-            }
-        }
-        exception_config.configs[exception_config.items].init_cb = cb->init_cb;
-        exception_config.configs[exception_config.items].dump_cb = cb->dump_cb;
-        exception_config.items++;
-        return EXCEPTION_STATUS_OK;
-    }
 }
 
 exception_status_t exception_register_regions(memory_region_type *region)
@@ -348,31 +281,20 @@ void exception_init(void)
     /* enable wdt reset mode for prevent exception flow hang */
     exception_enable_wdt_reset();
 
-    // /* enable exception log service */
-    // exception_log_service_init();
-
-    /* show exception mode */
-    exception_printf("exception_mode:0x%x\r\n", exception_config_mode.exception_mode);
     /* show pc */
     exception_printf("cm4 pc:0x%x\r\n", exception_context.pc);
     /* show lr */
     exception_printf("cm4 lr:0x%x\r\n", exception_context.lr);
 
-#if 0
-    /* check exception dump configuration if is ok */
-    exception_dump_config_check();
-#endif
-
+    exception_dump_config_init();
     /* Update Exception Number */
     exception_info.count += 1;
-
     /* Get current time stamp */
-    exception_info.timestamp = HAL_GetTick();
-
-    if (exception_config_mode.exception_mode_t.reset_after_dump == 1) {
-        exception_dump_config(DISABLE_WHILELOOP_MAGIC);
-    }
-
+#ifdef BTSTACK_FREERTOS_ENABLE
+    exception_info.timestamp =  xTaskGetTickCount();
+#else
+	exception_info.timestamp =  HAL_GetTick();
+#endif
 }
 
 /******************************************************************************/
@@ -418,86 +340,81 @@ static void exception_dump_context(uint32_t stack[])
         exception_context.msp = exception_context.sp;
     }
 
-#if (EXCEPTION_MEMDUMP_MODE & EXCEPTION_MEMDUMP_TEXT)
-    if (exception_config_mode.exception_mode & EXCEPTION_MEMDUMP_TEXT) {
-        /* feed wdt to keep time for context dump */
-        exception_feed_wdt();
+    /* feed wdt to keep time for context dump */
+    exception_feed_wdt();
 
-        exception_printf("\r\nCM4 Register dump begin:\r\n");
-        exception_printf("r0  = 0x%08x\r\n", exception_context.r0);
-        exception_printf("r1  = 0x%08x\r\n", exception_context.r1);
-        exception_printf("r2  = 0x%08x\r\n", exception_context.r2);
-        exception_printf("r3  = 0x%08x\r\n", exception_context.r3);
-        exception_printf("r4  = 0x%08x\r\n", exception_context.r4);
-        exception_printf("r5  = 0x%08x\r\n", exception_context.r5);
-        exception_printf("r6  = 0x%08x\r\n", exception_context.r6);
-        exception_printf("r7  = 0x%08x\r\n", exception_context.r7);
-        exception_printf("r8  = 0x%08x\r\n", exception_context.r8);
-        exception_printf("r9  = 0x%08x\r\n", exception_context.r9);
-        exception_printf("r10 = 0x%08x\r\n", exception_context.r10);
-        exception_printf("r11 = 0x%08x\r\n", exception_context.r11);
-        exception_printf("r12 = 0x%08x\r\n", exception_context.r12);
-        exception_printf("lr  = 0x%08x\r\n", exception_context.lr);
-        if (exception_context.pc < 0x08000000)
-            exception_printf("pc  = 0x%08x\r\n", exception_context.lr);
-        else
-            exception_printf("pc  = 0x%08x\r\n", exception_context.pc);
-        exception_printf("xpsr = 0x%08x\r\n", exception_context.psr);
-        exception_printf("EXC_RET = 0x%08x\r\n", exception_context.exc_return);
+    exception_printf("\r\nCM4 Register dump begin:\r\n");
+    exception_printf("r0  = 0x%08x\r\n", exception_context.r0);
+    exception_printf("r1  = 0x%08x\r\n", exception_context.r1);
+    exception_printf("r2  = 0x%08x\r\n", exception_context.r2);
+    exception_printf("r3  = 0x%08x\r\n", exception_context.r3);
+    exception_printf("r4  = 0x%08x\r\n", exception_context.r4);
+    exception_printf("r5  = 0x%08x\r\n", exception_context.r5);
+    exception_printf("r6  = 0x%08x\r\n", exception_context.r6);
+    exception_printf("r7  = 0x%08x\r\n", exception_context.r7);
+    exception_printf("r8  = 0x%08x\r\n", exception_context.r8);
+    exception_printf("r9  = 0x%08x\r\n", exception_context.r9);
+    exception_printf("r10 = 0x%08x\r\n", exception_context.r10);
+    exception_printf("r11 = 0x%08x\r\n", exception_context.r11);
+    exception_printf("r12 = 0x%08x\r\n", exception_context.r12);
+    exception_printf("lr  = 0x%08x\r\n", exception_context.lr);
+    if (exception_context.pc < 0x08000000)
+        exception_printf("pc  = 0x%08x\r\n", exception_context.lr);
+    else
+        exception_printf("pc  = 0x%08x\r\n", exception_context.pc);
+    exception_printf("xpsr = 0x%08x\r\n", exception_context.psr);
+    exception_printf("EXC_RET = 0x%08x\r\n", exception_context.exc_return);
 
-        /* FPU context? */
-        if ((exception_context.exc_return & 0x10) == 0) {
-            exception_printf("s0  = 0x%08x\r\n", exception_context.s0);
-            exception_printf("s1  = 0x%08x\r\n", exception_context.s1);
-            exception_printf("s2  = 0x%08x\r\n", exception_context.s2);
-            exception_printf("s3  = 0x%08x\r\n", exception_context.s3);
-            exception_printf("s4  = 0x%08x\r\n", exception_context.s4);
-            exception_printf("s5  = 0x%08x\r\n", exception_context.s5);
-            exception_printf("s6  = 0x%08x\r\n", exception_context.s6);
-            exception_printf("s7  = 0x%08x\r\n", exception_context.s7);
-            exception_printf("s8  = 0x%08x\r\n", exception_context.s8);
-            exception_printf("s9  = 0x%08x\r\n", exception_context.s9);
-            exception_printf("s10 = 0x%08x\r\n", exception_context.s10);
-            exception_printf("s11 = 0x%08x\r\n", exception_context.s11);
-            exception_printf("s12 = 0x%08x\r\n", exception_context.s12);
-            exception_printf("s13 = 0x%08x\r\n", exception_context.s13);
-            exception_printf("s14 = 0x%08x\r\n", exception_context.s14);
-            exception_printf("s15 = 0x%08x\r\n", exception_context.s15);
-            exception_printf("s16 = 0x%08x\r\n", exception_context.s16);
-            exception_printf("s17 = 0x%08x\r\n", exception_context.s17);
-            exception_printf("s18 = 0x%08x\r\n", exception_context.s18);
-            exception_printf("s19 = 0x%08x\r\n", exception_context.s19);
-            exception_printf("s20 = 0x%08x\r\n", exception_context.s20);
-            exception_printf("s21 = 0x%08x\r\n", exception_context.s21);
-            exception_printf("s22 = 0x%08x\r\n", exception_context.s22);
-            exception_printf("s23 = 0x%08x\r\n", exception_context.s23);
-            exception_printf("s24 = 0x%08x\r\n", exception_context.s24);
-            exception_printf("s25 = 0x%08x\r\n", exception_context.s25);
-            exception_printf("s26 = 0x%08x\r\n", exception_context.s26);
-            exception_printf("s27 = 0x%08x\r\n", exception_context.s27);
-            exception_printf("s28 = 0x%08x\r\n", exception_context.s28);
-            exception_printf("s29 = 0x%08x\r\n", exception_context.s29);
-            exception_printf("s30 = 0x%08x\r\n", exception_context.s30);
-            exception_printf("s31 = 0x%08x\r\n", exception_context.s31);
-            exception_printf("fpscr = 0x%08x\r\n", exception_context.fpscr);
-        }
-
-        exception_printf("CONTROL = 0x%08x\r\n", exception_context.control);
-        exception_printf("MSP     = 0x%08x\r\n", exception_context.msp);
-        exception_printf("PSP     = 0x%08x\r\n", exception_context.psp);
-        exception_printf("sp      = 0x%08x\r\n", exception_context.sp);
-        exception_printf("basepri = 0x%08x\r\n", exception_context.basepri);
-        exception_printf("primask = 0x%08x\r\n", exception_context.primask);
-        exception_printf("faultmask = 0x%08x\r\n", exception_context.faultmask);
-        exception_printf("\r\nCM4 Register dump end:\r\n");
+    /* FPU context? */
+    if ((exception_context.exc_return & 0x10) == 0) {
+        exception_printf("s0  = 0x%08x\r\n", exception_context.s0);
+        exception_printf("s1  = 0x%08x\r\n", exception_context.s1);
+        exception_printf("s2  = 0x%08x\r\n", exception_context.s2);
+        exception_printf("s3  = 0x%08x\r\n", exception_context.s3);
+        exception_printf("s4  = 0x%08x\r\n", exception_context.s4);
+        exception_printf("s5  = 0x%08x\r\n", exception_context.s5);
+        exception_printf("s6  = 0x%08x\r\n", exception_context.s6);
+        exception_printf("s7  = 0x%08x\r\n", exception_context.s7);
+        exception_printf("s8  = 0x%08x\r\n", exception_context.s8);
+        exception_printf("s9  = 0x%08x\r\n", exception_context.s9);
+        exception_printf("s10 = 0x%08x\r\n", exception_context.s10);
+        exception_printf("s11 = 0x%08x\r\n", exception_context.s11);
+        exception_printf("s12 = 0x%08x\r\n", exception_context.s12);
+        exception_printf("s13 = 0x%08x\r\n", exception_context.s13);
+        exception_printf("s14 = 0x%08x\r\n", exception_context.s14);
+        exception_printf("s15 = 0x%08x\r\n", exception_context.s15);
+        exception_printf("s16 = 0x%08x\r\n", exception_context.s16);
+        exception_printf("s17 = 0x%08x\r\n", exception_context.s17);
+        exception_printf("s18 = 0x%08x\r\n", exception_context.s18);
+        exception_printf("s19 = 0x%08x\r\n", exception_context.s19);
+        exception_printf("s20 = 0x%08x\r\n", exception_context.s20);
+        exception_printf("s21 = 0x%08x\r\n", exception_context.s21);
+        exception_printf("s22 = 0x%08x\r\n", exception_context.s22);
+        exception_printf("s23 = 0x%08x\r\n", exception_context.s23);
+        exception_printf("s24 = 0x%08x\r\n", exception_context.s24);
+        exception_printf("s25 = 0x%08x\r\n", exception_context.s25);
+        exception_printf("s26 = 0x%08x\r\n", exception_context.s26);
+        exception_printf("s27 = 0x%08x\r\n", exception_context.s27);
+        exception_printf("s28 = 0x%08x\r\n", exception_context.s28);
+        exception_printf("s29 = 0x%08x\r\n", exception_context.s29);
+        exception_printf("s30 = 0x%08x\r\n", exception_context.s30);
+        exception_printf("s31 = 0x%08x\r\n", exception_context.s31);
+        exception_printf("fpscr = 0x%08x\r\n", exception_context.fpscr);
     }
-#endif /* EXCEPTION_MEMDUMP_MODE */
+
+    exception_printf("CONTROL = 0x%08x\r\n", exception_context.control);
+    exception_printf("MSP     = 0x%08x\r\n", exception_context.msp);
+    exception_printf("PSP     = 0x%08x\r\n", exception_context.psp);
+    exception_printf("sp      = 0x%08x\r\n", exception_context.sp);
+    exception_printf("basepri = 0x%08x\r\n", exception_context.basepri);
+    exception_printf("primask = 0x%08x\r\n", exception_context.primask);
+    exception_printf("faultmask = 0x%08x\r\n", exception_context.faultmask);
+    exception_printf("\r\nCM4 Register dump end:\r\n");
 }
 
 /******************************************************************************/
 /*            Exception's memory dump Functions                               */
 /******************************************************************************/
-#if (EXCEPTION_MEMDUMP_MODE & EXCEPTION_MEMDUMP_TEXT)
 static void exception_dump_region_info(const memory_region_type *static_regions, exception_user_regions_t *user_regions)
 {
     uint32_t i = 0;
@@ -535,9 +452,7 @@ static void exception_dump_region_info(const memory_region_type *static_regions,
         }
     }
 }
-#endif /* EXCEPTION_MEMDUMP_MODE */
 
-#if (EXCEPTION_MEMDUMP_MODE & EXCEPTION_MEMDUMP_TEXT)
 static void exception_dump_region_data_text(const memory_region_type *static_regions, exception_user_regions_t *user_regions)
 {
     uint32_t i = 0;
@@ -597,33 +512,18 @@ static void exception_dump_region_data_text(const memory_region_type *static_reg
         }
     }
 }
-#endif /* EXCEPTION_MEMDUMP_MODE */
 
 static void exception_dump_memory(void)
 {
-    /* Memory Dump */
-#if (EXCEPTION_MEMDUMP_MODE & EXCEPTION_MEMDUMP_TEXT)
-    if (exception_config_mode.exception_mode & EXCEPTION_MEMDUMP_TEXT) {
-
-        /* feed wdt to keep time for memory dump */
-        exception_feed_wdt();
-
-        /* Print Regions' information */
-        exception_printf("CM4 Regions Information:\r\n");
-        exception_dump_region_info(memory_regions, &exception_user_regions);
-
-#if (EXCEPTION_MEMDUMP_MODE & EXCEPTION_MEMDUMP_TEXT)
-        if (exception_config_mode.exception_mode & EXCEPTION_MEMDUMP_TEXT)
-            /* Print Regions' data */
-        {
-            exception_dump_region_data_text(memory_regions, &exception_user_regions);
-        }
-#endif /* EXCEPTION_MEMDUMP_MODE */
-
-        /* dump cm4 end log */
-        exception_printf("\r\nmemory dump completed.\r\n");
-    }
-#endif /* EXCEPTION_MEMDUMP_MODE */
+    /* feed wdt to keep time for memory dump */
+    exception_feed_wdt();
+    /* Print Regions' information */
+    exception_printf("CM4 Regions Information:\r\n");
+    exception_dump_region_info(memory_regions, &exception_user_regions);
+    /* Print Regions' data */
+    exception_dump_region_data_text(memory_regions, &exception_user_regions);
+    /* dump cm4 end log */
+    exception_printf("\r\nmemory dump completed.\r\n");
 }
 
 /******************************************************************************/
@@ -711,22 +611,14 @@ void exception_dump_preprocess(uint32_t fault_type)
 {
     exception_info.reason = fault_type;
     exception_info.assert_expr = &assert_expr;
-
-#if (EXCEPTION_MEMDUMP_MODE & EXCEPTION_MEMDUMP_TEXT)
-    if (exception_config_mode.exception_mode & EXCEPTION_MEMDUMP_TEXT) {
-
-        /* Genie start message */
-        exception_printf("<<<<<<<< LOG START LOG START LOG START LOG START LOG START <<<<<<<<\r\n");
-    }
-#endif
+    /* Genie start message */
+    exception_printf("<<<<<<<< LOG START LOG START LOG START LOG START LOG START <<<<<<<<\r\n");
     /* feed wdt to keep time for preprocess */
     exception_feed_wdt();
-
     exception_printf("\r\nCM4 Fault Dump:\r\n");
     exception_print_assert_info();
     exception_printf("Exception Count = 0x%08x\r\n", (unsigned int)exception_info.count);
-    exception_printf("Exception Time = 0x%08x\r\n", (unsigned int)exception_info.timestamp_32k);
-
+    exception_printf("Exception Time = 0x%08x\r\n", (unsigned int)exception_info.timestamp);
     switch (exception_info.reason) {
         case EXCEPTION_NMI:
             exception_printf("\r\nIn NMI Fault Handler\r\n");
@@ -750,7 +642,6 @@ void exception_dump_preprocess(uint32_t fault_type)
             exception_printf("\r\nIn Unknow Fault Handler\r\n");
             break;
     }
-
     exception_printf("SCB->HFSR = 0x%08x\r\n", (unsigned int)SCB->HFSR);
     exception_printf("SCB->CFSR = 0x%08x\r\n", (unsigned int)SCB->CFSR);
     if ((SCB->HFSR & (1 << 30)) != 0) {
@@ -770,28 +661,16 @@ void exception_dump_preprocess(uint32_t fault_type)
 void exception_dump_postprocess(void)
 {
     uint32_t i = 0;
-
-#if (EXCEPTION_MEMDUMP_MODE & EXCEPTION_MEMDUMP_TEXT)
-    if (exception_config_mode.exception_mode & EXCEPTION_MEMDUMP_TEXT) {
-        for (i = 0; i < exception_config.items; i++) {
-            if (exception_config.configs[i].init_cb) {
-
-                /* feed wdt to keep time for init callback */
-                exception_feed_wdt();
-                /* run init callback */
-                exception_config.configs[i].init_cb();
-            }
+    for (i = 0; i < exception_config.items; i++) {
+        if (exception_config.configs[i].init_cb) {
+            /* feed wdt to keep time for init callback */
+            exception_feed_wdt();
+            /* run init callback */
+            exception_config.configs[i].init_cb();
         }
     }
-#endif /* EXCEPTION_MEMDUMP_MODE */
-
-#if (EXCEPTION_MEMDUMP_MODE & EXCEPTION_MEMDUMP_TEXT)
-    if (exception_config_mode.exception_mode & EXCEPTION_MEMDUMP_TEXT) {
-        /* Genie complete message */
-        exception_printf("<<<<<<<< LOG END LOG END LOG END LOG END LOG END <<<<<<<<\r\n");
-    }
-#endif
-
+    /* Genie complete message */
+    exception_printf("<<<<<<<< LOG END LOG END LOG END LOG END LOG END <<<<<<<<\r\n");
 }
 
 /******************************************************************************/
@@ -801,25 +680,19 @@ void exception_cm4_fault_handler(uint32_t stack[], uint32_t fault_type)
 {
     /* dump exception time, fault type, etc */
     exception_dump_preprocess(fault_type);
-
     /* dump the context when the exception happens */
     exception_dump_context(stack);
-
     /* dump the memory */
     exception_dump_memory();
-
     /* finish the dump */
     exception_dump_postprocess();
-
     /* check if reboot */
-    if (reboot_check() == DISABLE_WHILELOOP_MAGIC) {
+    if (reboot_check()) {
         exception_reboot();
     } else {
-
         /* disable wdt reset mode for entering while loop */
         /* maybe wdt has been changed to interrupt mode for triggering the NMI interrupt */
         exception_disable_wdt_reset();
-
         while (1);
     }
 }
