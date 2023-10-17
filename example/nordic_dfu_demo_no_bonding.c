@@ -35,7 +35,7 @@
  *
  */
 
-#define BTSTACK_FILE__ "nordic_dfu_demo.c"
+#define BTSTACK_FILE__ "nordic_dfu_demo_no_bonding.c"
 
 // *****************************************************************************
 /* EXAMPLE_START(nordic_dfu): LE Nordic dfu example 
@@ -54,6 +54,8 @@
  */
  // *****************************************************************************
 
+#define BTSTACK_FILE__ "nordic_dfu_demo_no_bonding.c"
+
 #include <inttypes.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -62,7 +64,7 @@
 
 #include "btstack.h"
 #include "nrf_dfu_ble.h"
-#include "nordic_dfu_demo.h"
+#include "nordic_dfu_demo_no_bonding.h"
 #include "nrf_dfu.h"
 
 uint8_t adv_data[] = {
@@ -113,15 +115,13 @@ const uint8_t bootloader_profile_data[] =
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 #if defined(MCUBOOT_IMG_APPLICATION1)
-static uint8_t bootloader_name[8] = {'D', 'f', 'u', '0', '0', '0', '0', '1'};
+static uint8_t bootloader_adv_name[8] = {'D', 'f', 'u', '0', '0', '0', '0', '1'};
 #elif defined(MCUBOOT_IMG_APPLICATION2)
-static uint8_t bootloader_name[8] = {'D', 'f', 'u', '0', '0', '0', '0', '2'};
+static uint8_t bootloader_adv_name[8] = {'D', 'f', 'u', '0', '0', '0', '0', '2'};
 #else
-static uint8_t bootloader_name[8] = {'D', 'f', 'u', '0', '0', '0', '0', '0'};
+static uint8_t bootloader_adv_name[8] = {'D', 'f', 'u', '0', '0', '0', '0', '0'};
 #endif
 static bd_addr_t le_public_addr = {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xF0};
-
-static hci_con_handle_t con_handle;
 
 __attribute__((weak)) void chipset_set_bd_addr_command(bd_addr_t addr);
 
@@ -157,6 +157,7 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
     UNUSED(size);
 
     uint16_t conn_interval;
+    hci_con_handle_t con_handle;
 
     if (packet_type != HCI_EVENT_PACKET) return;
 
@@ -164,7 +165,7 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
         case BTSTACK_EVENT_STATE:
             // BTstack activated, get started
             if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING) {
-                memcpy(&adv_data[5], bootloader_name, sizeof(bootloader_name));
+                memcpy(&adv_data[5], bootloader_adv_name, sizeof(bootloader_adv_name));
                 set_up_advertisement(adv_data_len, adv_data);
             } else if (btstack_event_state_get_state(packet) == HCI_STATE_OFF) {
                 le_public_addr[5] += 1;
@@ -244,7 +245,7 @@ static void nordic_dfu_evt_observer(nrf_dfu_evt_type_t evt, uint8_t *packet, uin
     switch (evt) {
         case NRF_DFU_EVT_CHANGE_BOOTLOADER_NAME:
             printf("new bootloader name:%s \n", (char *)packet);
-            memcpy(&bootloader_name, packet, size);
+            memcpy(&bootloader_adv_name, packet, size);
             break;
         case NRF_DFU_EVT_ENTER_BOOTLOADER_MODE:
             hci_power_control(HCI_POWER_OFF);

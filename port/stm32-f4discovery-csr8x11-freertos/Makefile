@@ -167,7 +167,7 @@ C_SOURCES += ${BTSTACK_ROOT}/3rd-party/micro-ecc/uECC.c
 #C_SOURCES += ${BTSTACK_ROOT}/3rd-party/segger-rtt/SEGGER_RTT_printf.c
 #C_SOURCES += ${BTSTACK_ROOT}/3rd-party/segger-rtt/SEGGER_RTT_Syscalls_GCC.c
 C_SOURCES += ${BTSTACK_ROOT}/3rd-party/yxml/yxml.c
-C_SOURCES += ${BTSTACK_ROOT}/3rd-party/md5/md5.c
+C_SOURCES += ${BTSTACK_ROOT}/3rd-party/md5/_md5_.c
 C_SOURCES += ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/def.c
 C_SOURCES += ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/inet_chksum.c
 C_SOURCES += ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/init.c
@@ -415,7 +415,9 @@ EXAMPLES += 				\
 	sm_pairing_central      \
 	sm_pairing_peripheral   \
 	nordic_spp_le_counter	\
-	nordic_dfu_demo			\
+	nordic_dfu_demo_no_bonding	\
+	nordic_dfu_demo_bonding \
+	nordic_dfu_demo_bootloader_only \
 
 GATT_FILES += \
 	ancs_client_demo.gatt \
@@ -429,7 +431,9 @@ GATT_FILES += \
 	sm_pairing_peripheral.gatt \
 	sm_pairing_central.gatt \
 	nordic_spp_le_counter.gatt	\
-	nordic_dfu_demo.gatt	   \
+	nordic_dfu_demo_no_bonding.gatt	   \
+	nordic_dfu_demo_bonding.gatt	   \
+	nordic_dfu_demo_bootloader_only.gatt	   \
 
 endif
 ifeq (${BR_EDR_ENABLE}, y)
@@ -483,14 +487,14 @@ else #EXAMPLE_PLUS_ENABLE=n
 ifeq (${mcuboot}, boot)
 EXAMPLES += mcuboot_bootloader_demo
 else ifeq (${mcuboot}, app1)
-EXAMPLES += nordic_dfu_demo
-GATT_FILES += nordic_dfu_demo.gatt
+EXAMPLES += nordic_dfu_demo_bonding
+GATT_FILES += nordic_dfu_demo_bonding.gatt
 else ifeq (${mcuboot}, app2)
-EXAMPLES += nordic_dfu_demo
-GATT_FILES += nordic_dfu_demo.gatt
+EXAMPLES += nordic_dfu_demo_bonding
+GATT_FILES += nordic_dfu_demo_bonding.gatt
 else
-EXAMPLES += nordic_dfu_demo
-GATT_FILES += nordic_dfu_demo.gatt
+EXAMPLES += nordic_dfu_demo_bonding
+GATT_FILES += nordic_dfu_demo_bonding.gatt
 endif
 endif
 
@@ -521,28 +525,6 @@ all: \
 	$(addprefix $(BUILD_DIR)/,$(EXAMPLES:=.bin)) \
 	$(addprefix $(BUILD_DIR)/,$(EXAMPLES:=.jdebug)) \
 
-$(BUILD_DIR)/%.h: %.gatt
-	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
-
-$(BUILD_DIR)/%.o: %.c Makefile | $(BUILD_DIR)
-	$(CC) -c $(CFLAGS) -Wa,-a,-ad,-alms=$(BUILD_DIR)/$(notdir $(<:.c=.lst)) $< -o $@
-
-$(BUILD_DIR)/%.o: %.s Makefile | $(BUILD_DIR)
-	$(AS) -c $(CFLAGS) $< -o $@
-
-$(BUILD_DIR)/%.elf: Makefile $(OBJECTS) $(BUILD_DIR)/%.o
-	$(CC) $(filter-out Makefile,$^)  $(LDFLAGS) -o $@
-	$(SZ) $@
-
-$(BUILD_DIR)/%.hex: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
-	$(HEX) $< $@
-	
-$(BUILD_DIR)/%.bin: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
-	$(BIN) $< $@	
-
-$(BUILD_DIR)/%.jdebug: ozone.jdebug | $(BUILD_DIR)
-	sed -e "s|EXAMPLE|$(basename $(notdir $@))|" $<  > $@
-
 ifeq (${mcuboot}, app1)
 	python3 ${MCUBOOT_IMG_TOOL} sign --key ${MCUBOOT_SIGNING_KEY} \
 								--header-size ${MCUBOOT_IMG_HEADER_SIZE} \
@@ -568,6 +550,28 @@ else ifeq (${mcuboot}, app2)
 							--application-version 1 \
 							$(BUILD_DIR)/nrf_dfu_mcuboot.zip
 endif
+
+$(BUILD_DIR)/%.h: %.gatt
+	python3 ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
+
+$(BUILD_DIR)/%.o: %.c Makefile | $(BUILD_DIR)
+	$(CC) -c $(CFLAGS) -Wa,-a,-ad,-alms=$(BUILD_DIR)/$(notdir $(<:.c=.lst)) $< -o $@
+
+$(BUILD_DIR)/%.o: %.s Makefile | $(BUILD_DIR)
+	$(AS) -c $(CFLAGS) $< -o $@
+
+$(BUILD_DIR)/%.elf: Makefile $(OBJECTS) $(BUILD_DIR)/%.o
+	$(CC) $(filter-out Makefile,$^)  $(LDFLAGS) -o $@
+	$(SZ) $@
+
+$(BUILD_DIR)/%.hex: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
+	$(HEX) $< $@
+	
+$(BUILD_DIR)/%.bin: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
+	$(BIN) $< $@	
+
+$(BUILD_DIR)/%.jdebug: ozone.jdebug | $(BUILD_DIR)
+	sed -e "s|EXAMPLE|$(basename $(notdir $@))|" $<  > $@
 
 $(BUILD_DIR):
 	mkdir $@		

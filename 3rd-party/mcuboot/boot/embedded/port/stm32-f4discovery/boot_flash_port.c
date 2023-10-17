@@ -27,13 +27,13 @@
 #endif
 
 #define BOOTLOADER_SIZE                     (64 * 1024 )
-#define APPLICATION_SIZE                    (128 * 1024)
+#define APPLICATION_SIZE                    (MCUBOOT_IMG_SLOT_SIZE)
 #define SCRATCH_SIZE                        (128 * 1024)
 
 #define BOOTLOADER_START_ADDRESS            (ADDR_FLASH_SECTOR_0)
 #define APPLICATION_PRIMARY_START_ADDRESS   (ADDR_FLASH_SECTOR_5)
-#define APPLICATION_SECONDARY_START_ADDRESS (ADDR_FLASH_SECTOR_6)
-#define SCRATCH_START_ADDRESS               (ADDR_FLASH_SECTOR_8)
+#define APPLICATION_SECONDARY_START_ADDRESS (APPLICATION_PRIMARY_START_ADDRESS + APPLICATION_SIZE)
+#define SCRATCH_START_ADDRESS               (APPLICATION_SECONDARY_START_ADDRESS + APPLICATION_SIZE)
 
 #define BOOTLOADER_SECTOR_SIZE              (16 * 1024)
 #define APPLICATION_SECTOR_SIZE             (128 * 1024)
@@ -278,7 +278,7 @@ int flash_area_erase(const struct flash_area *fa, uint32_t off, uint32_t len)
 
 size_t flash_area_align(const struct flash_area *area)
 {
-    return 4;
+    return MCUBOOT_IMG_ALIGN;
 }
 
 uint8_t flash_area_erased_val(const struct flash_area *area)

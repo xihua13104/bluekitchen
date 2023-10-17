@@ -1,4 +1,4 @@
-#define __BTSTACK_FILE__ "port.c"
+#define __BTSTACK_FILE__ "btstack_port.c"
 
 // include STM32 first to avoid warning about redefinition of UNUSED
 #include "stm32f1xx_hal.h"
@@ -61,7 +61,7 @@ void hal_cpu_enable_irqs(void){
 
 void hal_cpu_enable_irqs_and_sleep(void){
 	__enable_irq();
-	//__asm__("wfe");	// go to sleep if event flag isn't set. if set, just clear it. IRQs set event flag
+	__asm__("wfe");	// go to sleep if event flag isn't set. if set, just clear it. IRQs set event flag
 }
 
 // hal_stdin.h
@@ -96,12 +96,8 @@ static void (*cts_irq_handler)(void) = &dummy_handler;
 static void dummy_handler(void){};
 //static int hal_uart_needed_during_sleep;
 
-#if 1
-void hal_uart_dma_set_sleep(uint8_t sleep){
-}
-#endif
+void hal_uart_dma_set_sleep(uint8_t sleep){}
 
-#if 1
 // reset Bluetooth using n_shutdown
 static void bluetooth_power_cycle(void){
 	printf("Bluetooth power cycle\n");
@@ -110,7 +106,6 @@ static void bluetooth_power_cycle(void){
 	HAL_GPIO_WritePin( BT_HW_RST_GPIO_Port, BT_HW_RST_Pin, GPIO_PIN_SET );
 	HAL_Delay( 500 );
 }
-#endif
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart){
 	if (huart == &huart2){
@@ -145,9 +140,7 @@ void EXTI15_10_IRQHandler(void){
 	}
 }
 
-void hal_uart_dma_set_csr_irq_handler( void (*the_irq_handler)(void)){
-}
-
+void hal_uart_dma_set_csr_irq_handler( void (*the_irq_handler)(void)){}
 
 int  hal_uart_dma_set_baud(uint32_t baud){
 	huart2.Init.BaudRate = baud;
@@ -246,26 +239,20 @@ typedef enum {
 #include <errno.h>
 int _write(int file, char *ptr, int len);
 int _write(int file, char *ptr, int len){
-#if 1
 	uint8_t cr = '\r';
 	int i;
     
 	if (file == STDOUT_FILENO || file == STDERR_FILENO) {
-#if 1
 		for (i = 0; i < len; i++) {
 			if (ptr[i] == '\n') {
 				HAL_UART_Transmit( &huart1, &cr, 1, HAL_MAX_DELAY );
 			}
 			HAL_UART_Transmit( &huart1, (uint8_t *) &ptr[i], 1, HAL_MAX_DELAY );
 		}
-#endif
 		return i;
 	}
 	errno = EIO;
 	return -1;
-#else
-	return len;
-#endif
 }
 
 int _read(int file, char * ptr, int len){
@@ -320,15 +307,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     printf("ERROR: Expected Bluetooth Chipset from CSR but got manufacturer 0x%04x\n", manufacturer);
                     break;
                 }
-                // assert correct init script is used based on expected lmp_subversion
-#if 0
-                if (lmp_subversion != btstack_chipset_cc256x_lmp_subversion()){
-                    printf("Error: LMP Subversion does not match initscript! ");
-                    printf("Your initscripts is for %s chipset\n", btstack_chipset_cc256x_lmp_subversion() < lmp_subversion ? "an older" : "a newer");
-                    printf("Please update Makefile to include the appropriate bluetooth_init_cc256???.c file\n");
-                    break;
-                }
-#endif
             }
             break;
         default:
@@ -336,7 +314,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     }
 }
 
-#if 1
 static btstack_tlv_flash_bank_t btstack_tlv_flash_bank_context;
 static hal_flash_bank_stm32_t   hal_flash_bank_context;
 
@@ -345,7 +322,6 @@ static hal_flash_bank_stm32_t   hal_flash_bank_context;
 #define HAL_FLASH_PAGE_1_ID   255               //page1 id
 //#define HAL_FLASH_PAGE_0_ADDR 0x08032000      (FLASH_BASE + HAL_FLASH_PAGE_0_ID * HAL_FLASH_PAGE_SIZE)//flash page0 start address
 //#define HAL_FLASH_PAGE_1_ADDR 0x08032800	    (FLASH_BASE + HAL_FLASH_PAGE_0_ID * HAL_FLASH_PAGE_SIZE)//flash page1 start address
-#endif
 
 //
 int btstack_main(int argc, char ** argv);
@@ -366,7 +342,6 @@ void port_main(void){
     hci_init(hci_transport_h4_instance(btstack_uart_block_embedded_instance()), (void*) &config);
     hci_set_chipset(btstack_chipset_csr_instance());
 
-#if 1
     // setup TLV Flash Sector implementation
     const hal_flash_bank_t * hal_flash_bank_impl = hal_flash_bank_stm32_init_instance(
     		&hal_flash_bank_context,
@@ -389,7 +364,6 @@ void port_main(void){
 
     // setup LE Device DB using TLV
     le_device_db_tlv_configure(btstack_tlv_impl, &btstack_tlv_flash_bank_context);
-#endif
 
 #ifdef HAVE_HAL_AUDIO
     // setup audio

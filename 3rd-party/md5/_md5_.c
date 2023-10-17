@@ -39,7 +39,7 @@
 
 #include <string.h>
 
-#include "md5.h"
+#include "_md5_.h"
 
 /*
  * The basic MD5 functions.

@@ -52,7 +52,7 @@
 #include "bluetooth_sdp.h"
 #include "classic/sdp_client_rfcomm.h"
 #include "btstack_event.h"
-#include "md5.h"
+#include "_md5_.h"
 #include "yxml.h"
 
 #include "classic/obex.h"
