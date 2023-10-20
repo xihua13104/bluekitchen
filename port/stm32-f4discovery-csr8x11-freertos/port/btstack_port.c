@@ -100,6 +100,14 @@ uint8_t hal_cpu_is_msp_valid(uint32_t msp){
     return ((msp & 0x2FFE0000 ) == 0x20020000);
 }
 
+#ifdef ENABLE_BTSTACK_ASSERT
+#include "exception_handler.h"
+void btstack_assert_failed(const char * file, uint16_t line_nr)
+{
+    platform_assert("assert!", file, line_nr);
+}
+#endif
+
 #ifndef ENABLE_SEGGER_RTT
 // hal_stdin.h
 #include "hal_stdin.h"

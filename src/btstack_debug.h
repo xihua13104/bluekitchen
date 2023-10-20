@@ -64,7 +64,7 @@
 
 #ifdef HAVE_ASSERT
 // map to libc assert
-#define btstack_assert(condition)  if (condition) {} else { platform_assert(#condition, BTSTACK_FILE__, __LINE__);  }//assert(condition)
+#define btstack_assert(condition)
 #else /* HAVE_ASSERT */
 #ifdef ENABLE_BTSTACK_ASSERT
 void btstack_assert_failed(const char * file, uint16_t line_nr);

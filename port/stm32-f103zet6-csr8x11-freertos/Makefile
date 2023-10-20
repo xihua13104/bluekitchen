@@ -15,7 +15,6 @@
 ######################################
 TARGET = stm32f103zet6-csr8x11-freertos
 
-
 ######################################
 # building variables
 ######################################
@@ -167,27 +166,6 @@ C_SOURCES += ${BTSTACK_ROOT}/3rd-party/lwip/core/src/apps/http/fs.c
 C_SOURCES += ${BTSTACK_ROOT}/3rd-party/lwip/core/src/apps/http/httpd.c
 C_SOURCES += ${BTSTACK_ROOT}/3rd-party/lwip/dhcp-server/dhserver.c
 endif
-
-# VPATH += ${BTSTACK_ROOT}/example/nordic_dfu
-# VPATH += ${BTSTACK_ROOT}/example/nordic_dfu/nano-pb
-
-# C_SOURCES += ${BTSTACK_ROOT}/example/nordic_dfu/nrf_dfu.c
-# C_SOURCES += ${BTSTACK_ROOT}/example/nordic_dfu/nrf_dfu_transport.c
-# C_SOURCES += ${BTSTACK_ROOT}/example/nordic_dfu/nrf_dfu_ble.c
-# C_SOURCES += ${BTSTACK_ROOT}/example/nordic_dfu/nrf_dfu_req_handler.c
-# C_SOURCES += ${BTSTACK_ROOT}/example/nordic_dfu/nrf_dfu_settings.c
-# C_SOURCES += ${BTSTACK_ROOT}/example/nordic_dfu/nrf_dfu_utils.c
-# C_SOURCES += ${BTSTACK_ROOT}/example/nordic_dfu/dfu-cc.pb.c
-# #C_SOURCES += ${BTSTACK_ROOT}/example/nordic_dfu/nrf_dfu_flash.c
-# C_SOURCES += ${BTSTACK_ROOT}/example/nordic_dfu/nrf_dfu_validation.c
-# C_SOURCES += ${BTSTACK_ROOT}/example/nordic_dfu/nrf_dfu_handling_error.c
-# C_SOURCES += ${BTSTACK_ROOT}/example/nordic_dfu/crc32.c
-
-# C_SOURCES += ${BTSTACK_ROOT}/example/nordic_dfu/nano-pb/pb_common.c
-# C_SOURCES += ${BTSTACK_ROOT}/example/nordic_dfu/nano-pb/pb_decode.c
-# C_SOURCES += ${BTSTACK_ROOT}/example/nordic_dfu/nano-pb/pb_encode.c
-# #C_SOURCES += ${BTSTACK_ROOT}/example/nordic_dfu/nano-pb/pb_common.c
-
 
 C_SOURCES += ${BTSTACK_ROOT}/example/sco_demo_util.c
 C_SOURCES += ${BTSTACK_ROOT}/platform/lwip/port/sys_arch.c
@@ -358,8 +336,6 @@ C_INCLUDES += -I${BTSTACK_ROOT}/platform/lwip
 C_INCLUDES += -I${BTSTACK_ROOT}/platform/lwip/port
 C_INCLUDES += -I${BTSTACK_ROOT}/chipset/csr
 C_INCLUDES += -I${BTSTACK_ROOT}/tool
-# C_INCLUDES += -I${BTSTACK_ROOT}/example/nordic_dfu
-# C_INCLUDES += -I${BTSTACK_ROOT}/example/nordic_dfu/nano-pb
 
 C_INCLUDES += -I Port
 C_INCLUDES += -I Src
